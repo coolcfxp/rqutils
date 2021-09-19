@@ -72,5 +72,7 @@
 		</dependencies>
 	</dependencyManagement>
 
-
+	<modules>
+		<module>patterns</module>
+	</modules>
 </project>
