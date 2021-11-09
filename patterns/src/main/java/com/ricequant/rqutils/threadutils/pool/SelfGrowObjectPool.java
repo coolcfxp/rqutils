@@ -5,7 +5,9 @@ package com.ricequant.rqutils.threadutils.pool;
  */
 public class SelfGrowObjectPool<T> implements IPool<T> {
 
-  private int iCurrentSize = 16;
+  private final double iExpandFactor;
+
+  private int iCurrentSize;
 
   private IPoolObjectFactory<T> iObjectFactory;
 
@@ -18,8 +20,13 @@ public class SelfGrowObjectPool<T> implements IPool<T> {
   private int iNextUsed;
 
   public SelfGrowObjectPool(IPoolObjectFactory<T> factory, int initialSize) {
+    this(factory, initialSize, 2);
+  }
+
+  public SelfGrowObjectPool(IPoolObjectFactory<T> factory, int initialSize, double expandFactor) {
     iObjectFactory = factory;
     iCurrentSize = initialSize;
+    iExpandFactor = expandFactor;
 
     iArray = (T[]) new Object[initialSize];
 
@@ -35,7 +42,7 @@ public class SelfGrowObjectPool<T> implements IPool<T> {
   public synchronized T fetch() {
     if (iNumUsedObjects >= iCurrentSize) {
       T[] oldArray = iArray;
-      iCurrentSize *= 2;
+      iCurrentSize *= iExpandFactor;
       iArray = (T[]) new Object[iCurrentSize];
 
       System.arraycopy(oldArray, 0, iArray, 0, oldArray.length);
