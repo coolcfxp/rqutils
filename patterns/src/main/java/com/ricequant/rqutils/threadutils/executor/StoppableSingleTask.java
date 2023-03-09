@@ -9,11 +9,11 @@ public class StoppableSingleTask {
 
   private final Thread thread;
 
-  private final AtomicBoolean started = new AtomicBoolean(true);
+  private final AtomicBoolean running = new AtomicBoolean(true);
 
   private StoppableSingleTask(Runnable runnable) {
     thread = new Thread(() -> {
-      while (started.get()) {
+      while (running.get()) {
         try {
           runnable.run();
         }
@@ -26,12 +26,12 @@ public class StoppableSingleTask {
     thread.start();
   }
 
-  public static StoppableSingleTask start(Runnable runnable) {
+  public static StoppableSingleTask run(Runnable runnable) {
     return new StoppableSingleTask(runnable);
   }
 
   public void stop() {
-    started.set(false);
+    running.set(false);
     thread.interrupt();
   }
 }
