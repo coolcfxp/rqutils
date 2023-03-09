@@ -18,6 +18,7 @@ public class StoppableSingleTask {
           runnable.run();
         }
         catch (Throwable e) {
+          e.printStackTrace();
           break;
         }
       }
