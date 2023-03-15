@@ -2,6 +2,7 @@ package com.ricequant.rqutils.threadutils.executor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * @author kangol
@@ -14,13 +15,15 @@ public class StoppableSingleTask {
 
   private static final AtomicInteger threadCounter = new AtomicInteger(0);
 
-  private StoppableSingleTask(Runnable runnable, String name) {
+  private StoppableSingleTask(Supplier<Boolean> runnable, String name) {
     if (name == null)
       name = "StoppableSingleTask-" + threadCounter.incrementAndGet();
     thread = new Thread(() -> {
       while (running.get()) {
         try {
-          runnable.run();
+          if (runnable.get()) {
+            break;
+          }
         }
         catch (Throwable e) {
           e.printStackTrace();
@@ -32,11 +35,11 @@ public class StoppableSingleTask {
     thread.start();
   }
 
-  public static StoppableSingleTask run(Runnable runnable) {
+  public static StoppableSingleTask run(Supplier<Boolean> runnable) {
     return new StoppableSingleTask(runnable, null);
   }
 
-  public static StoppableSingleTask run(Runnable runnable, String name) {
+  public static StoppableSingleTask run(Supplier<Boolean> runnable, String name) {
     return new StoppableSingleTask(runnable, name);
   }
 
