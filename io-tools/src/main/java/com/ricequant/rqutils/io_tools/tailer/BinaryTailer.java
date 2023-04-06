@@ -1,6 +1,7 @@
 package com.ricequant.rqutils.io_tools.tailer;
 
 import java.io.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -10,6 +11,12 @@ public class BinaryTailer {
 
   private final static int DEFAULT_INTERVAL = 500;
 
+  private ScheduledFuture<?> task;
+
+  private long lastModified;
+
+  private byte[] readBuffer;
+
   public static class Builder {
 
     private String file;
@@ -17,6 +24,8 @@ public class BinaryTailer {
     private int bufferSize = 4096;
 
     private BinaryTailerListener listener;
+
+    private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
     public Builder file(String file) {
       this.file = file;
@@ -33,8 +42,13 @@ public class BinaryTailer {
       return this;
     }
 
+    public Builder schedulerThreadFactory(ThreadFactory schedulerThreadFactory) {
+      this.schedulerThreadFactory = schedulerThreadFactory;
+      return this;
+    }
+
     public BinaryTailer build() {
-      return new BinaryTailer(file, bufferSize, listener, DEFAULT_INTERVAL);
+      return new BinaryTailer(file, bufferSize, listener, DEFAULT_INTERVAL, schedulerThreadFactory);
     }
   }
 
@@ -50,9 +64,12 @@ public class BinaryTailer {
 
   private final RandomAccessFile raFile;
 
+  private final ScheduledExecutorService scheduler;
+
   private final AtomicBoolean running = new AtomicBoolean(false);
 
-  private BinaryTailer(String file, int bufferSize, BinaryTailerListener listener, int interval) {
+  private BinaryTailer(String file, int bufferSize, BinaryTailerListener listener, int interval,
+          ThreadFactory schedulerThreadFactory) {
     if (file == null)
       throw new IllegalArgumentException("file is null");
     if (bufferSize <= 0)
@@ -79,67 +96,70 @@ public class BinaryTailer {
     catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
+
+    if (schedulerThreadFactory != null)
+      scheduler = Executors.newSingleThreadScheduledExecutor(schedulerThreadFactory);
+    else
+      scheduler = Executors.newSingleThreadScheduledExecutor();
   }
 
   public void start() {
     running.set(true);
-    new Thread(() -> {
-      long lastModified = 0;
-      byte[] readBuffer = new byte[bufferSize];
-      while (running.get()) {
+    this.lastModified = 0;
+    this.readBuffer = new byte[bufferSize];
+
+    this.task = scheduler.scheduleAtFixedRate(() -> {
+      if (!running.get()) {
+        this.task.cancel(true);
+
         try {
-          Thread.sleep(interval);
-          if (file.lastModified() == lastModified || lastPos == file.length())
-            continue;
-
-          lastModified = file.lastModified();
-
-          try {
-            this.raFile.seek(lastPos);
-            int maxReadLength = (int) (file.length() - lastPos);
-            if (maxReadLength > bufferSize)
-              maxReadLength = bufferSize;
-            if (maxReadLength <= 0)
-              continue;
-
-            long curPos = this.raFile.getFilePointer();
-            try {
-              listener.onBeforeRead(this.raFile);
-            }
-            catch (Throwable e) {
-              e.printStackTrace();
-            }
-            this.raFile.seek(curPos);
-            int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
-            if (readLength > 0) {
-              try {
-                listener.onNewData(readBuffer, 0, readLength);
-              }
-              catch (Throwable e) {
-                e.printStackTrace();
-              }
-              this.lastPos += readLength;
-            }
-          }
-          catch (EOFException e) {
-            this.lastPos = file.length();
-          }
-          catch (IOException e) {
-            this.listener.onFileError(e);
-          }
+          this.raFile.close();
         }
-        catch (InterruptedException e) {
-          e.printStackTrace();
+        catch (IOException e) {
+          // ignore
+        }
+
+        return;
+      }
+
+      if (file.lastModified() == lastModified || lastPos == file.length())
+        return;
+
+      lastModified = file.lastModified();
+      try {
+        this.raFile.seek(lastPos);
+        int maxReadLength = (int) (file.length() - lastPos);
+        if (maxReadLength > bufferSize)
+          maxReadLength = bufferSize;
+        if (maxReadLength <= 0)
           return;
+
+        long curPos = this.raFile.getFilePointer();
+        try {
+          listener.onBeforeRead(this.raFile);
+        }
+        catch (Throwable e) {
+          e.printStackTrace();
+        }
+        this.raFile.seek(curPos);
+        int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
+        if (readLength > 0) {
+          try {
+            listener.onNewData(readBuffer, 0, readLength);
+          }
+          catch (Throwable e) {
+            e.printStackTrace();
+          }
+          this.lastPos += readLength;
         }
       }
-      try {
-        this.raFile.close();
+      catch (EOFException e) {
+        this.lastPos = file.length();
       }
       catch (IOException e) {
-        // ignore
+        this.listener.onFileError(e);
       }
-    }).start();
+    }, 0, interval, TimeUnit.MILLISECONDS);
   }
 
   public void stop() {
