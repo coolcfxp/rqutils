@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class BinaryTailer {
 
+  private final static int DEFAULT_INTERVAL = 500;
+
   public static class Builder {
 
     private String file;
@@ -32,7 +34,7 @@ public class BinaryTailer {
     }
 
     public BinaryTailer build() {
-      return new BinaryTailer(file, bufferSize, listener, 500);
+      return new BinaryTailer(file, bufferSize, listener, DEFAULT_INTERVAL);
     }
   }
 
@@ -100,9 +102,22 @@ public class BinaryTailer {
             if (maxReadLength <= 0)
               continue;
 
+            long curPos = this.raFile.getFilePointer();
+            try {
+              listener.onBeforeRead(this.raFile);
+            }
+            catch (Throwable e) {
+              e.printStackTrace();
+            }
+            this.raFile.seek(curPos);
             int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
             if (readLength > 0) {
-              listener.onNewData(readBuffer, 0, readLength);
+              try {
+                listener.onNewData(readBuffer, 0, readLength);
+              }
+              catch (Throwable e) {
+                e.printStackTrace();
+              }
               this.lastPos += readLength;
             }
           }
