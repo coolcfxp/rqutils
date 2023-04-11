@@ -104,10 +104,8 @@ public class BinaryTailer {
   }
 
   public void start() {
-    if (running.get())
+    if (running.compareAndSet(false, true))
       return;
-
-    running.set(true);
     this.lastModified = 0;
     this.readBuffer = new byte[bufferSize];
 
