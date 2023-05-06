@@ -6,9 +6,9 @@ import java.io.RandomAccessFile;
 /**
  * @author kangol
  */
-public interface BinaryTailerListener {
+public interface TextTailerListener {
 
-  void onNewData(byte[] data, int offset, int length) throws Throwable;
+  void onNewLine(String lineData) throws Throwable;
 
   void onFileError(IOException e);
 
