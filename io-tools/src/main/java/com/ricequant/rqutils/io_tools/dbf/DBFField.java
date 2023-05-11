@@ -1,6 +1,7 @@
 package com.ricequant.rqutils.io_tools.dbf;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 /**
  * @author kangol
@@ -13,13 +14,16 @@ public class DBFField {
 
   private final int length;
 
-  DBFField(ByteBuffer fieldDef, int offset) {
+  private final Charset charset;
+
+  DBFField(ByteBuffer fieldDef, int offset, Charset charset) {
     byte[] nameBytes = new byte[11];
     fieldDef.position(offset);
     fieldDef.get(offset, nameBytes);
-    name = new String(nameBytes).trim();
+    name = new String(nameBytes, charset).trim();
     type = fieldDef.get(offset + 11);
-    length = fieldDef.get(offset + 16);
+    length = fieldDef.get(offset + 16) & 0xff;
+    this.charset = charset;
   }
 
   @Override
@@ -28,7 +32,7 @@ public class DBFField {
   }
 
   public DBFValue decode(byte[] bytes, int offset, int length) {
-    String raw = new String(bytes, offset, length).trim();
+    String raw = new String(bytes, offset, length, charset).trim();
     if (type == 'C') {
       // String type
       return new DBFValue(raw);

@@ -5,6 +5,8 @@ import com.ricequant.rqutils.io_tools.tailer.BinaryTailerListener;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -17,6 +19,8 @@ public class DBFTailer {
 
   private final BinaryTailer trailer;
 
+  private final Charset charset;
+
   private ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024);
 
   private final Map<String, DBFField> fieldsDef = new LinkedHashMap<>();
@@ -24,11 +28,15 @@ public class DBFTailer {
   private int rowLength = 0;
 
   public DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener) throws IOException {
+    this(file, rowListener, StandardCharsets.UTF_8);
+  }
+
+  public DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset) throws IOException {
+    this.charset = charset;
     this.trailer = new BinaryTailer.Builder().file(file).listener(new BinaryTailerListener() {
       @Override
       public void onNewData(byte[] data, int offset, int length) {
-        if (buffer.remaining() < length) {
-          buffer.flip();
+        if (buffer.capacity() - buffer.limit() < length) {
           ByteBuffer buf = ByteBuffer.allocate(buffer.capacity() * 2);
           System.out.println("Allocating buffer of size " + buf.capacity());
           buf.put(buffer);
@@ -47,6 +55,9 @@ public class DBFTailer {
           DBFRow row = new DBFRow(buffer, fieldsDef);
           rowListener.accept(row.values());
         }
+
+        if (buffer.remaining() == 0)
+          buffer.reset();
 
         if (stopFlag) {
           stop();
@@ -88,7 +99,7 @@ public class DBFTailer {
       if (nextByte == 0x0D) {
         break;
       }
-      DBFField field = new DBFField(buffer, offset);
+      DBFField field = new DBFField(buffer, offset, charset);
       fieldsDef.put(field.name(), field);
       this.rowLength += field.length();
       offset += 32;
