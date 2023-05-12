@@ -5,11 +5,11 @@ package com.ricequant.rqutils.io_tools.dbf;
  */
 public class DBFValue {
 
-  private String stringValue;
+  private final String stringValue;
 
-  private double doubleValue;
+  private final double doubleValue;
 
-  private boolean booleanValue;
+  private final boolean booleanValue;
 
   private boolean isString = false;
 
@@ -66,5 +66,16 @@ public class DBFValue {
 
   public boolean isString() {
     return isString;
+  }
+
+  @Override
+  public String toString() {
+    if (isString)
+      return stringValue;
+    if (isDouble)
+      return String.valueOf(doubleValue);
+    if (isBoolean)
+      return String.valueOf(booleanValue);
+    return null;
   }
 }

@@ -33,10 +33,12 @@ public class DBFTailer {
 
   public DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset) throws IOException {
     this.charset = charset;
+    this.buffer.position(0).limit(0);
     this.trailer = new BinaryTailer.Builder().file(file).listener(new BinaryTailerListener() {
       @Override
       public void onNewData(byte[] data, int offset, int length) {
-        if (buffer.capacity() - buffer.limit() < length) {
+        buffer.compact();
+        if (buffer.remaining() < length) {
           ByteBuffer buf = ByteBuffer.allocate(buffer.capacity() * 2);
           System.out.println("Allocating buffer of size " + buf.capacity());
           buf.put(buffer);
@@ -44,23 +46,21 @@ public class DBFTailer {
         }
 
         buffer.put(data, offset, length);
+        buffer.flip();
 
         if (rowLength == 0) {
           int bodyOffset = decodeFieldDefs();
-          buffer.limit(buffer.capacity()).position(bodyOffset);
+          buffer.position(bodyOffset);
         }
 
-        boolean stopFlag = buffer.get(buffer.position()) == 0x1A;
-        while (!stopFlag && buffer.remaining() >= rowLength) {
+        while (buffer.remaining() >= rowLength) {
+          boolean stopFlag = buffer.get(buffer.position()) == 0x1A;
+          if (stopFlag) {
+            stop();
+            break;
+          }
           DBFRow row = new DBFRow(buffer, fieldsDef);
           rowListener.accept(row.values());
-        }
-
-        if (buffer.remaining() == 0)
-          buffer.reset();
-
-        if (stopFlag) {
-          stop();
         }
       }
 

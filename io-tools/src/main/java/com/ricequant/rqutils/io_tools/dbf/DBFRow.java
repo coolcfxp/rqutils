@@ -19,7 +19,6 @@ public class DBFRow {
         bytes = new byte[field.length()];
       }
       buffer.get(bytes, 0, field.length());
-      buffer.position(buffer.position() + field.length());
       values.put(field.name(), field.decode(bytes, 0, field.length()));
     }
   }
