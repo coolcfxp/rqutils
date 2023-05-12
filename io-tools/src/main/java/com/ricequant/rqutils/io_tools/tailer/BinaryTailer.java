@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class BinaryTailer {
 
-  private final static int DEFAULT_INTERVAL = 500;
+  private final static int DEFAULT_INTERVAL = 100;
 
   private ScheduledFuture<?> task;
 
@@ -103,7 +103,7 @@ public class BinaryTailer {
       scheduler = Executors.newSingleThreadScheduledExecutor();
   }
 
-  public void start() {
+  public void startPeriodicalScan() {
     if (!running.compareAndSet(false, true))
       return;
     this.lastModified = 0;
@@ -112,58 +112,65 @@ public class BinaryTailer {
     this.task = scheduler.scheduleAtFixedRate(() -> {
       if (!running.get()) {
         this.task.cancel(true);
-
-        try {
-          this.raFile.close();
-        }
-        catch (IOException e) {
-          // ignore
-        }
+        close();
 
         return;
       }
 
-      if (file.lastModified() == lastModified || lastPos == file.length())
+      scan();
+    }, 0, interval, TimeUnit.MILLISECONDS);
+  }
+
+  public void scan() {
+    if (file.lastModified() == lastModified || lastPos == file.length())
+      return;
+
+    lastModified = file.lastModified();
+    try {
+      this.raFile.seek(lastPos);
+      int maxReadLength = (int) (file.length() - lastPos);
+      if (maxReadLength > bufferSize)
+        maxReadLength = bufferSize;
+      if (maxReadLength <= 0)
         return;
 
-      lastModified = file.lastModified();
+      long curPos = this.raFile.getFilePointer();
       try {
-        this.raFile.seek(lastPos);
-        int maxReadLength = (int) (file.length() - lastPos);
-        if (maxReadLength > bufferSize)
-          maxReadLength = bufferSize;
-        if (maxReadLength <= 0)
-          return;
-
-        long curPos = this.raFile.getFilePointer();
+        listener.onBeforeRead(this.raFile);
+      }
+      catch (Throwable e) {
+        e.printStackTrace();
+      }
+      this.raFile.seek(curPos);
+      int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
+      if (readLength > 0) {
         try {
-          listener.onBeforeRead(this.raFile);
+          listener.onNewData(readBuffer, 0, readLength);
         }
         catch (Throwable e) {
           e.printStackTrace();
         }
-        this.raFile.seek(curPos);
-        int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
-        if (readLength > 0) {
-          try {
-            listener.onNewData(readBuffer, 0, readLength);
-          }
-          catch (Throwable e) {
-            e.printStackTrace();
-          }
-          this.lastPos += readLength;
-        }
+        this.lastPos += readLength;
       }
-      catch (EOFException e) {
-        this.lastPos = file.length();
-      }
-      catch (IOException e) {
-        this.listener.onFileError(e);
-      }
-    }, 0, interval, TimeUnit.MILLISECONDS);
+    }
+    catch (EOFException e) {
+      this.lastPos = file.length();
+    }
+    catch (IOException e) {
+      this.listener.onFileError(e);
+    }
   }
 
-  public void stop() {
+  public void close() {
+    try {
+      this.raFile.close();
+    }
+    catch (IOException e) {
+      // ignore
+    }
+  }
+
+  public void stopPeriodicalScan() {
     running.set(false);
   }
 
