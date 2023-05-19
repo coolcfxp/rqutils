@@ -97,6 +97,8 @@ public class BinaryTailer {
       throw new RuntimeException(e);
     }
 
+    this.readBuffer = new byte[bufferSize];
+
     if (schedulerThreadFactory != null)
       scheduler = Executors.newSingleThreadScheduledExecutor(schedulerThreadFactory);
     else
@@ -107,13 +109,10 @@ public class BinaryTailer {
     if (!running.compareAndSet(false, true))
       return;
     this.lastModified = 0;
-    this.readBuffer = new byte[bufferSize];
-
     this.task = scheduler.scheduleAtFixedRate(() -> {
       if (!running.get()) {
         this.task.cancel(true);
         close();
-
         return;
       }
 
@@ -128,29 +127,33 @@ public class BinaryTailer {
     lastModified = file.lastModified();
     try {
       this.raFile.seek(lastPos);
-      int maxReadLength = (int) (file.length() - lastPos);
-      if (maxReadLength > bufferSize)
-        maxReadLength = bufferSize;
-      if (maxReadLength <= 0)
+      int lengthLeft = (int) (file.length() - lastPos);
+      if (lengthLeft <= 0)
         return;
-
-      long curPos = this.raFile.getFilePointer();
-      try {
-        listener.onBeforeRead(this.raFile);
-      }
-      catch (Throwable e) {
-        e.printStackTrace();
-      }
-      this.raFile.seek(curPos);
-      int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
-      if (readLength > 0) {
+      int totalRead = 0;
+      while (totalRead < lengthLeft) {
+        int maxReadLength = Math.min(lengthLeft - totalRead, bufferSize);
         try {
-          listener.onNewData(readBuffer, 0, readLength);
+          listener.onBeforeRead(this.raFile);
         }
         catch (Throwable e) {
           e.printStackTrace();
         }
-        this.lastPos += readLength;
+        this.raFile.seek(this.lastPos);
+        int readLength = this.raFile.read(readBuffer, 0, maxReadLength);
+        if (readLength > 0) {
+          try {
+            listener.onNewData(readBuffer, 0, readLength);
+          }
+          catch (Throwable e) {
+            e.printStackTrace();
+          }
+          this.lastPos += readLength;
+          totalRead += readLength;
+        }
+        else {
+          break;
+        }
       }
     }
     catch (EOFException e) {
