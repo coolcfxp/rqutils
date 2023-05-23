@@ -135,6 +135,7 @@ public class DBFTailer {
       this.rowLength += field.length();
       offset += 32;
     }
+    this.rowLength++;
     return offset + 1;
   }
 
