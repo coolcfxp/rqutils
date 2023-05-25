@@ -83,7 +83,12 @@ public class DBFTailer {
                     break;
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef);
-                  rowListener.accept(row.values());
+                  try {
+                    rowListener.accept(row.values());
+                  }
+                  catch (Throwable e) {
+                    e.printStackTrace();
+                  }
                 }
               }
 
