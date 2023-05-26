@@ -71,7 +71,7 @@ public class DBFValue {
   @Override
   public String toString() {
     if (isString)
-      return stringValue;
+      return '\"' + stringValue + '\"';
     if (isDouble)
       return String.valueOf(doubleValue);
     if (isBoolean)
