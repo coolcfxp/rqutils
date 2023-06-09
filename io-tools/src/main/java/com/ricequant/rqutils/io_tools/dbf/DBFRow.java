@@ -13,7 +13,6 @@ public class DBFRow {
 
   DBFRow(ByteBuffer buffer, Map<String, DBFField> fieldsDef) {
     byte[] bytes = new byte[1024];
-    buffer.get(); // skip deleted flag
     for (DBFField field : fieldsDef.values()) {
       if (field.length() > bytes.length) {
         bytes = new byte[field.length()];

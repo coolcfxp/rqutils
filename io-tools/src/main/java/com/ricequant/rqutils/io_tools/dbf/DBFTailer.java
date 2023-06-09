@@ -77,12 +77,14 @@ public class DBFTailer {
                 }
 
                 while (buffer.remaining() >= rowLength) {
-                  boolean stopFlag = buffer.get(buffer.position()) == 0x1A;
+                  int rowBegin = buffer.position();
+                  boolean stopFlag = buffer.get() == 0x1A;
                   if (stopFlag) {
                     stopPeriodicalScan();
                     break;
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef);
+                  buffer.position(rowBegin + rowLength);
                   try {
                     rowListener.accept(row.values());
                   }
@@ -141,6 +143,13 @@ public class DBFTailer {
       offset += 32;
     }
     this.rowLength++;
+    int headerDefinedRowLength = (buffer.get(11) & 0xFF) << 8 | buffer.get(10) & 0xFF;
+    if (headerDefinedRowLength != this.rowLength) {
+      System.out.println(
+              "Header defined row length " + headerDefinedRowLength + " is not equal to calculated row length "
+                      + this.rowLength + ", padding with 0x20");
+      this.rowLength = headerDefinedRowLength;
+    }
     return offset + 1;
   }
 
