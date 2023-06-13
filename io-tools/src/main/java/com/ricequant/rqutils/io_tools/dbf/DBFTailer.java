@@ -83,9 +83,9 @@ public class DBFTailer {
 
                 while (buffer.remaining() >= rowLength) {
                   int rowBegin = buffer.position();
-                  boolean deletionFlag = buffer.get() != 0x20;
-                  if (deletionFlag) {
-                    System.out.println(file + ": Deletion flag detected");
+                  byte deletionFlag = buffer.get();
+                  if (deletionFlag != 0x20) {
+                    System.out.println(file + ": Deletion flag detected: " + deletionFlag);
                     try {
                       FileUtils.copyFile(new File(file), new File(file + ".bak"));
                     }
