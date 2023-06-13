@@ -92,8 +92,8 @@ public class DBFTailer {
                     catch (IOException e) {
                       e.printStackTrace();
                     }
-                    stopPeriodicalScan();
-                    break;
+                    buffer.position(rowBegin + rowLength);
+                    continue;
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef);
                   buffer.position(rowBegin + rowLength);
