@@ -2,9 +2,7 @@ package com.ricequant.rqutils.io_tools.dbf;
 
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailer;
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailerListener;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -84,16 +82,8 @@ public class DBFTailer {
                 while (buffer.remaining() >= rowLength) {
                   int rowBegin = buffer.position();
                   byte deletionFlag = buffer.get();
-                  if (deletionFlag != 0x20) {
-                    System.out.println(file + ": Deletion flag detected: " + deletionFlag);
-                    try {
-                      FileUtils.copyFile(new File(file), new File(file + ".bak"));
-                    }
-                    catch (IOException e) {
-                      e.printStackTrace();
-                    }
-                    buffer.position(rowBegin + rowLength);
-                    continue;
+                  if (deletionFlag == 0x1A) {
+                    System.out.println(file + ": EOF flag detected: " + deletionFlag);
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef);
                   buffer.position(rowBegin + rowLength);
