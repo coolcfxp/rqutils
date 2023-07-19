@@ -25,6 +25,8 @@ public class DBFTailer {
 
   private final Charset charset;
 
+  private final String file;
+
   private ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024);
 
   private final Map<String, DBFField> fieldsDef = new LinkedHashMap<>();
@@ -54,6 +56,7 @@ public class DBFTailer {
 
   private DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset,
           ThreadFactory schedulerThreadFactory) {
+    this.file = file;
     this.charset = charset;
     this.buffer.position(0).limit(0);
     this.trailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
@@ -78,10 +81,9 @@ public class DBFTailer {
 
                 while (buffer.remaining() >= rowLength) {
                   int rowBegin = buffer.position();
-                  boolean stopFlag = buffer.get() == 0x1A;
-                  if (stopFlag) {
-                    stopPeriodicalScan();
-                    break;
+                  byte deletionFlag = buffer.get();
+                  if (deletionFlag == 0x1A) {
+                    System.out.println(file + ": EOF flag detected: " + deletionFlag);
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef);
                   buffer.position(rowBegin + rowLength);
@@ -96,13 +98,13 @@ public class DBFTailer {
 
               @Override
               public void onFileError(IOException e) {
-
+                e.printStackTrace();
               }
 
               @Override
               public void onBeforeRead(RandomAccessFile file) throws Exception {
                 int numRecords = readNumRecords(file);
-                System.out.println("Number of records: " + numRecords);
+                System.out.println(DBFTailer.this.file + ": Number of records: " + numRecords);
               }
             }).build();
   }
@@ -146,7 +148,7 @@ public class DBFTailer {
     int headerDefinedRowLength = (buffer.get(11) & 0xFF) << 8 | buffer.get(10) & 0xFF;
     if (headerDefinedRowLength != this.rowLength) {
       System.out.println(
-              "Header defined row length " + headerDefinedRowLength + " is not equal to calculated row length "
+              file + ": Header defined row length " + headerDefinedRowLength + " is not equal to calculated row length "
                       + this.rowLength + ", padding with 0x20");
       this.rowLength = headerDefinedRowLength;
     }
