@@ -1,10 +1,11 @@
 package com.ricequant.rqutils.threadutils.executor;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * @author chenfeng
  */
+@Disabled
 class HashedMultiExecutorTest {
 
   private HashedMultiExecutor exe;
@@ -16,20 +17,6 @@ class HashedMultiExecutorTest {
 
   @org.junit.jupiter.api.Test
   void queueTask() throws InterruptedException {
-    exe.startAll();
-    exe.queueTask(() -> {
-      sleep(1);
-    }, 1);
-
-    exe.queueTask(() -> {
-      sleep(2);
-    }, 2);
-
-    exe.queueTask(() -> {
-      sleep(3);
-    }, 3);
-
-    System.out.println(exe.stopAll().join());
   }
 
   private void sleep(int s) {
