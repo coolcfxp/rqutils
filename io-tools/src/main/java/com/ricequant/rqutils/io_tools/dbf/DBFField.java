@@ -14,8 +14,6 @@ public class DBFField {
 
   private final int length;
 
-  private final Charset charset;
-
   DBFField(ByteBuffer fieldDef, int offset, Charset charset) {
     byte[] nameBytes = new byte[11];
     fieldDef.position(offset);
@@ -23,7 +21,13 @@ public class DBFField {
     name = new String(nameBytes, charset).trim();
     type = fieldDef.get(offset + 11);
     length = fieldDef.get(offset + 16) & 0xff;
-    this.charset = charset;
+  }
+
+
+  public DBFField(String name, byte type, int length) {
+    this.name = name;
+    this.type = type;
+    this.length = length;
   }
 
   @Override
@@ -31,7 +35,7 @@ public class DBFField {
     return String.format("name: %s, type: %s, length: %s", name, type, length);
   }
 
-  public DBFValue decode(byte[] bytes, int offset, int length) {
+  public DBFValue decode(byte[] bytes, int offset, int length, Charset charset) {
     String raw = new String(bytes, offset, length, charset).trim();
     if (type == 'C') {
       // String type

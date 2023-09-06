@@ -85,7 +85,7 @@ public class DBFTailer {
                   if (deletionFlag == 0x1A) {
                     System.out.println(file + ": EOF flag detected: " + deletionFlag);
                   }
-                  DBFRow row = new DBFRow(buffer, fieldsDef);
+                  DBFRow row = new DBFRow(buffer, fieldsDef, charset);
                   buffer.position(rowBegin + rowLength);
                   try {
                     rowListener.accept(row.values());
