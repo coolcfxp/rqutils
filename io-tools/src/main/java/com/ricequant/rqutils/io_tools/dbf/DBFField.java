@@ -14,6 +14,18 @@ public class DBFField {
 
   private final int length;
 
+  public static final byte FIELD_TYPE_CHAR = 'C';
+
+  public static final byte FIELD_TYPE_DATE = 'D';
+
+  public static final byte FIELD_TYPE_FLOAT = 'F';
+
+  public static final byte FIELD_TYPE_LOGICAL = 'L';
+
+  public static final byte FIELD_TYPE_MEMO = 'M';
+
+  public static final byte FIELD_TYPE_NUMERIC = 'N';
+
   DBFField(ByteBuffer fieldDef, int offset, Charset charset) {
     byte[] nameBytes = new byte[11];
     fieldDef.position(offset);
