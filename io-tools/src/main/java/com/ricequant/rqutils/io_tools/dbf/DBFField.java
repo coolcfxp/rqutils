@@ -36,10 +36,10 @@ public class DBFField {
   }
 
 
-  public DBFField(String name, byte type, int length) {
+  public DBFField(String name, byte type, int dataLength) {
     this.name = name;
     this.type = type;
-    this.length = length;
+    this.length = dataLength;
   }
 
   @Override

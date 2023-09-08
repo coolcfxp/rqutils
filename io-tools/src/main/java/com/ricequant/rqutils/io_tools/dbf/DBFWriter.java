@@ -142,8 +142,9 @@ public class DBFWriter extends AbstractDBFCodec {
   private void computeRowLength() {
     rowLength = 0;
     for (DBFField f : this.fieldsDef.values()) {
-      rowLength += f.length() + 1;
+      rowLength += f.length();
     }
+    rowLength++;
     int numPadding = (rowLength % 2 == 1 ? 1 : 0);
     this.padding = new byte[numPadding];
     Arrays.fill(this.padding, (byte) 0x20);
@@ -175,7 +176,6 @@ public class DBFWriter extends AbstractDBFCodec {
     }
     buffer.clear();
     buffer.put((byte) 0x0D);
-    buffer.put((byte) 0);
     this.channel.write(buffer.flip());
   }
 

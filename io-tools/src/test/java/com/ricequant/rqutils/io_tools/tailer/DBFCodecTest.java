@@ -10,7 +10,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Kangol
@@ -27,9 +30,13 @@ class DBFCodecTest {
     File tempDir = createTempDirectory("test");
     tempDir.deleteOnExit();
     this.testFile = Path.of(tempDir.getAbsolutePath(), "test.dbf").toFile();
-
-    this.writer = new DBFWriter.Builder().fields(new DBFField("Field1", DBFField.FIELD_TYPE_CHAR, 9),
-            new DBFField("Field2", DBFField.FIELD_TYPE_CHAR, 4)).build(testFile.getAbsolutePath());
+    testFile.deleteOnExit();
+    this.writer = new DBFWriter.Builder().fields(
+                    new DBFField("Field1", DBFField.FIELD_TYPE_CHAR,
+                            "123456789".getBytes(StandardCharsets.UTF_8).length),
+                    new DBFField("Field2", DBFField.FIELD_TYPE_CHAR,
+                            "12345".getBytes(StandardCharsets.UTF_8).length))
+            .build(testFile.getAbsolutePath());
 
     System.out.println(testFile.getAbsolutePath());
   }
@@ -39,11 +46,22 @@ class DBFCodecTest {
     this.writer.writeRow(new DBFValue("12345678"), new DBFValue("abcd"));
     this.writer.writeRow(new DBFValue("1234568"), new DBFValue("abcde"));
 
+    int[] count = new int[]{0};
     DBFTailer tailer = new DBFTailer.Builder().build(testFile.getAbsolutePath(), row -> {
-      System.out.println(row);
+      if (count[0] == 0) {
+        assertEquals("12345678", row.get("Field1").stringValue());
+        assertEquals("abcd", row.get("Field2").stringValue());
+      }
+      else if (count[0] == 1) {
+        assertEquals("1234568", row.get("Field1").stringValue());
+        assertEquals("abcde", row.get("Field2").stringValue());
+      }
+      count[0]++;
     });
 
     tailer.scan();
+
+    assertEquals(2, count[0]);
     tailer.close();
   }
 
