@@ -2,6 +2,7 @@ package com.ricequant.rqutils.io_tools.dbf;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 /**
  * @author kangol
@@ -26,6 +27,8 @@ public class DBFField {
 
   public static final byte FIELD_TYPE_NUMERIC = 'N';
 
+  private final Charset charset;
+
   DBFField(ByteBuffer fieldDef, int offset, Charset charset) {
     byte[] nameBytes = new byte[11];
     fieldDef.position(offset);
@@ -33,13 +36,15 @@ public class DBFField {
     name = new String(nameBytes, charset).trim();
     type = fieldDef.get(offset + 11);
     length = fieldDef.get(offset + 16) & 0xff;
+    this.charset = charset;
   }
 
 
-  public DBFField(String name, byte type, int dataLength) {
+  public DBFField(String name, byte type, int dataLength, Charset charset) {
     this.name = name;
     this.type = type;
     this.length = dataLength;
+    this.charset = charset;
   }
 
   @Override
@@ -71,6 +76,34 @@ public class DBFField {
     }
 
     return new DBFValue(raw);
+  }
+
+  public void encode(DBFValue value, byte[] target, int offset) {
+    if (type == FIELD_TYPE_CHAR || type == FIELD_TYPE_MEMO || type == FIELD_TYPE_DATE) {
+      byte[] bytes = value.stringValue().getBytes(charset);
+      if (bytes.length > target.length - offset)
+        throw new IllegalArgumentException("target buffer is too small");
+      System.arraycopy(bytes, 0, target, offset, bytes.length);
+      Arrays.fill(target, offset + bytes.length, offset + length, (byte) 0x20);
+    }
+    else if (type == FIELD_TYPE_NUMERIC || type == FIELD_TYPE_FLOAT) {
+      byte[] bytes;
+      if (value.isDouble())
+        bytes = String.valueOf(value.doubleValue()).getBytes(charset);
+      else
+        bytes = String.valueOf(value.longValue()).getBytes(charset);
+
+      if (bytes.length > target.length - offset)
+        throw new IllegalArgumentException("target buffer is too small");
+      System.arraycopy(bytes, 0, target, offset + length - bytes.length, bytes.length);
+      Arrays.fill(target, offset, offset + length - bytes.length, (byte) 0x20);
+    }
+    else if (type == FIELD_TYPE_LOGICAL) {
+      if (target.length - offset < 1)
+        throw new IllegalArgumentException("target buffer is too small");
+      target[offset + 1] = value.booleanValue() ? (byte) 'T' : (byte) 'F';
+      Arrays.fill(target, offset + 1, offset + length, (byte) 0x20);
+    }
   }
 
   public String name() {

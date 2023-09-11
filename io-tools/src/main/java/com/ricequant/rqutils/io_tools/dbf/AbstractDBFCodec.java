@@ -3,6 +3,7 @@ package com.ricequant.rqutils.io_tools.dbf;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -27,7 +28,7 @@ public abstract class AbstractDBFCodec {
 
   protected byte[] padding;
 
-  protected ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024);
+  protected ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024).order(ByteOrder.LITTLE_ENDIAN);;
 
   AbstractDBFCodec(String fileName, Charset charset) {
     this.fileName = fileName;
@@ -57,6 +58,8 @@ public abstract class AbstractDBFCodec {
       Arrays.fill(this.padding, (byte) 0x20);
       this.rowLength = headerDefinedRowLength;
     }
+    else
+      this.padding = new byte[0];
     return offset + 1;
   }
 

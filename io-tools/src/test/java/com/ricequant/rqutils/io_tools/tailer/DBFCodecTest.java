@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -32,17 +33,16 @@ class DBFCodecTest {
     this.testFile = Path.of(tempDir.getAbsolutePath(), "test.dbf").toFile();
     testFile.deleteOnExit();
     this.writer = new DBFWriter.Builder().fields(
-                    new DBFField("Field1", DBFField.FIELD_TYPE_CHAR,
-                            "123456789".getBytes(StandardCharsets.UTF_8).length),
-                    new DBFField("Field2", DBFField.FIELD_TYPE_CHAR,
-                            "12345".getBytes(StandardCharsets.UTF_8).length))
-            .build(testFile.getAbsolutePath());
+            new DBFField("Field1", DBFField.FIELD_TYPE_CHAR, "123456789".getBytes(StandardCharsets.UTF_8).length,
+                    Charset.forName("GBK")),
+            new DBFField("Field2", DBFField.FIELD_TYPE_CHAR, "12345".getBytes(StandardCharsets.UTF_8).length,
+                    Charset.forName("GBK"))).build(testFile.getAbsolutePath());
 
     System.out.println(testFile.getAbsolutePath());
   }
 
   @Test
-  void testWriteThenRead() {
+  void testWriteThenRead() throws IOException {
     this.writer.writeRow(new DBFValue("12345678"), new DBFValue("abcd"));
     this.writer.writeRow(new DBFValue("1234568"), new DBFValue("abcde"));
 

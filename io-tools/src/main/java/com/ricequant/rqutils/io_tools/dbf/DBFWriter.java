@@ -3,12 +3,13 @@ package com.ricequant.rqutils.io_tools.dbf;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -29,9 +30,7 @@ public class DBFWriter extends AbstractDBFCodec {
 
   private final Calendar c = Calendar.getInstance();
 
-  private final ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024).order(ByteOrder.LITTLE_ENDIAN);
-
-  private final int INCOMPLETE_TRANS_FLAG_OFFSET = 14;
+  private final static int INCOMPLETE_TRANS_FLAG_OFFSET = 14;
 
   private final ThreadFactory schedulerThreadFactory;
 
@@ -47,6 +46,9 @@ public class DBFWriter extends AbstractDBFCodec {
     if (file.exists()) {
       this.file = new RandomAccessFile(file, "rw");
       this.channel = this.file.getChannel();
+      buffer.clear();
+      this.channel.read(buffer);
+      buffer.flip();
       decodeFieldDefs();
       numRecords = readNumRecords(this.file);
       this.file.seek(this.file.length());
@@ -179,26 +181,18 @@ public class DBFWriter extends AbstractDBFCodec {
     this.channel.write(buffer.flip());
   }
 
-  public void writeRow(DBFValue... values) {
+  public void writeRow(DBFValue... values) throws IOException {
     if (values.length != fieldsDef.size())
       throw new RuntimeException("Number of values does not match number of fields");
-
+    writeTransactionFlag(true);
     buffer.clear();
     Iterator<DBFField> fieldsDefIter = fieldsDef.values().iterator();
     try {
       this.buffer.put((byte) 0x20);
       for (DBFValue v : values) {
-        int fieldLength = fieldsDefIter.next().length();
-        if (v.isString())
-          writePaddedBytes(v.stringValue(), fieldLength);
-        else if (v.isDouble())
-          writePaddedBytes(String.valueOf(v.doubleValue()), fieldLength);
-        else if (v.isBoolean()) {
-          writePaddedBytes(v.booleanValue() ? "T" : "F", fieldLength);
-        }
-        else {
-          throw new RuntimeException("Unknown type: " + v);
-        }
+        DBFField f = fieldsDefIter.next();
+        f.encode(v, this.buffer.array(), this.buffer.position());
+        this.buffer.position(this.buffer.position() + f.length());
       }
       if (this.padding.length > 0)
         this.buffer.put(this.padding);
@@ -209,23 +203,18 @@ public class DBFWriter extends AbstractDBFCodec {
       this.file.seek(NUM_RECORD_OFFSET);
       writeIntLittleEndian(this.file, numRecords);
       this.file.seek(pointer);
-
     }
-    catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void writePaddedBytes(String dataString, int fieldLength) throws IOException {
-    byte[] data = dataString.getBytes(charset);
-    this.buffer.put(data);
-    if (data.length < fieldLength) {
-      byte[] padded = new byte[fieldLength - data.length];
-      Arrays.fill(padded, (byte) 0x20);
-      this.buffer.put(padded);
+    finally {
+      writeTransactionFlag(false);
     }
   }
 
+  private void writeTransactionFlag(boolean isBegin) throws IOException {
+    long pointer = this.file.getFilePointer();
+    this.file.seek(INCOMPLETE_TRANS_FLAG_OFFSET);
+    this.file.write(isBegin ? '1' : '0');
+    this.file.seek(pointer);
+  }
   private static void writeIntLittleEndian(RandomAccessFile file, int value) throws IOException {
     int a = value & 0xFF;
     int b = (value >> 8) & 0xFF;
