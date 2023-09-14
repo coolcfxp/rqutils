@@ -110,7 +110,7 @@ public class DBFWriter extends AbstractDBFCodec {
     buffer.putInt(0);
 
     // write header length
-    buffer.putShort((short) HEADER_LENGTH);
+    buffer.putShort((short) (HEADER_LENGTH + fieldsDef.size() * 32 + 1));
 
     buffer.putShort((short) this.rowLength);
 
