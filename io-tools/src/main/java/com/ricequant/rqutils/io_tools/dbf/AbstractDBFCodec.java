@@ -36,6 +36,7 @@ public abstract class AbstractDBFCodec {
   }
 
   protected int decodeFieldDefs() {
+    this.fieldsDef.clear();
     int offset = HEADER_LENGTH;
     while (true) {
       byte nextByte = buffer.get(offset);

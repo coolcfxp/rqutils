@@ -179,6 +179,7 @@ public class DBFWriter extends AbstractDBFCodec {
     buffer.clear();
     buffer.put((byte) 0x0D);
     this.channel.write(buffer.flip());
+    this.channel.force(true);
   }
 
   public void writeRow(DBFValue... values) throws IOException {
@@ -203,6 +204,7 @@ public class DBFWriter extends AbstractDBFCodec {
       this.file.seek(NUM_RECORD_OFFSET);
       writeIntLittleEndian(this.file, numRecords);
       this.file.seek(pointer);
+      this.channel.force(true);
     }
     finally {
       writeTransactionFlag(false);
@@ -215,6 +217,7 @@ public class DBFWriter extends AbstractDBFCodec {
     this.file.write(isBegin ? '1' : '0');
     this.file.seek(pointer);
   }
+
   private static void writeIntLittleEndian(RandomAccessFile file, int value) throws IOException {
     int a = value & 0xFF;
     int b = (value >> 8) & 0xFF;
