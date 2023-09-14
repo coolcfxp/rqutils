@@ -83,6 +83,10 @@ public class DBFField {
       byte[] bytes = value.stringValue().getBytes(charset);
       if (bytes.length > target.length - offset)
         throw new IllegalArgumentException("target buffer is too small");
+      if (bytes.length > length)
+        throw new IllegalArgumentException(
+                "data=" + value + ", data is too long, fieldWidth=" + length + ", " + "dataWidth=" + bytes.length);
+
       System.arraycopy(bytes, 0, target, offset, bytes.length);
       Arrays.fill(target, offset + bytes.length, offset + length, (byte) 0x20);
     }
