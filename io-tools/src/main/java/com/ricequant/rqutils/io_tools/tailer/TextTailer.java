@@ -1,78 +1,113 @@
 package com.ricequant.rqutils.io_tools.tailer;
 
-import java.io.*;
+import com.ricequant.rqutils.io_tools.FileTailer;
+
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Consumer;
 
 /**
- * @author kangol
+ * @author Kangol
  */
-public class TextTailer {
+public class TextTailer implements FileTailer {
 
-  private final static int DEFAULT_INTERVAL = 500;
+  private ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
 
-  private ScheduledFuture<?> task;
+  private final BinaryTailer tailer;
 
-  private long lastModified;
+  public static class Builder {
 
-  private ByteBuffer readBuffer = ByteBuffer.allocate(4096);
+    private Charset charset = StandardCharsets.UTF_8;
 
-  private final File file;
+    private String lineSeparator = System.lineSeparator();
 
-  private final TextTailerListener listener;
+    private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
-  private final int interval;
-
-  private long lastPos;
-
-  private final Charset charset;
-
-  private final RandomAccessFile raFile;
-
-  private final ScheduledExecutorService scheduler;
-
-  private final AtomicBoolean running = new AtomicBoolean(false);
-
-  private TextTailer(String file, Charset charset, TextTailerListener listener, int interval,
-          ThreadFactory schedulerThreadFactory) {
-    if (file == null)
-      throw new IllegalArgumentException("file is null");
-    if (listener == null)
-      throw new IllegalArgumentException("listener is null");
-
-    this.file = new File(file);
-    if (!this.file.exists())
-      throw new IllegalArgumentException("file does not exist");
-    if (!this.file.isFile())
-      throw new IllegalArgumentException("file is not a file");
-    if (!this.file.canRead())
-      throw new IllegalArgumentException("file is not readable");
-
-    this.charset = charset == null ? StandardCharsets.UTF_8 : charset;
-    this.listener = listener;
-    this.interval = interval;
-    this.lastPos = 0;
-
-    try {
-      this.raFile = new RandomAccessFile(file, "r");
-    }
-    catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
+    public Builder charset(Charset charset) {
+      this.charset = charset;
+      return this;
     }
 
-    if (schedulerThreadFactory != null)
-      scheduler = Executors.newSingleThreadScheduledExecutor(schedulerThreadFactory);
-    else
-      scheduler = Executors.newSingleThreadScheduledExecutor();
+    public Builder schedulerThreadFactory(ThreadFactory schedulerThreadFactory) {
+      this.schedulerThreadFactory = schedulerThreadFactory;
+      return this;
+    }
+
+    public Builder lineSeparator(String lineSeparator) {
+      this.lineSeparator = lineSeparator;
+      return this;
+    }
+
+    public TextTailer build(String file, Consumer<String> rowListener) {
+      return new TextTailer(file, rowListener, charset, schedulerThreadFactory, lineSeparator);
+    }
   }
 
+  private TextTailer(String file, Consumer<String> rowListener, Charset charset, ThreadFactory schedulerThreadFactory,
+          String lineSeparator) {
+    this.tailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
+            .listener(new BinaryTailerListener() {
+              @Override
+              public void onNewData(byte[] data, int offset, int length) throws Throwable {
+                buffer.compact();
+                if (buffer.remaining() < length) {
+                  ByteBuffer buf = ByteBuffer.allocate(buffer.capacity() * 2);
+                  System.out.println("Allocating buffer of size " + buf.capacity());
+                  buf.put(buffer);
+                  buffer = buf;
+                }
+                buffer.put(data, offset, length);
+                buffer.flip();
 
-  public void start() {
-    // TODO: this harder than it looks, because the file might contains unicode characters
+                int start = buffer.position();
+                int limit = buffer.limit();
+                int end = start;
+
+                while (end < limit) {
+                  boolean found = true;
+                  for (int i = 0; i < lineSeparator.length(); i++) {
+                    if (buffer.get(end + i) != lineSeparator.charAt(i)) {
+                      found = false;
+                      break;
+                    }
+                  }
+                  if (found) {
+                    end += lineSeparator.length();
+                    String line = new String(buffer.array(), start, end - start - 1, charset);
+                    rowListener.accept(line);
+                    buffer.position(end);
+                    start = end;
+                  }
+                  else {
+                    end++;
+                  }
+                }
+              }
+
+              @Override
+              public void onFileError(IOException e) {
+                e.printStackTrace();
+              }
+
+              @Override
+              public void onBeforeRead(RandomAccessFile file) throws Throwable {
+
+              }
+            }).build();
   }
 
+  @Override
+  public void scan() {
+    this.tailer.scan();
+  }
 
+  @Override
+  public void close() {
+    this.tailer.close();
+  }
 }

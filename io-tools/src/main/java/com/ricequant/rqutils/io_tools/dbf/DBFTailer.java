@@ -1,5 +1,6 @@
 package com.ricequant.rqutils.io_tools.dbf;
 
+import com.ricequant.rqutils.io_tools.FileTailer;
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailer;
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailerListener;
 
@@ -16,9 +17,9 @@ import java.util.function.Consumer;
 /**
  * @author kangol
  */
-public class DBFTailer extends AbstractDBFCodec {
+public class DBFTailer extends AbstractDBFCodec implements FileTailer {
 
-  private final BinaryTailer trailer;
+  private final BinaryTailer tailer;
 
   public static class Builder {
 
@@ -45,7 +46,7 @@ public class DBFTailer extends AbstractDBFCodec {
           ThreadFactory schedulerThreadFactory) {
     super(file, charset);
     this.buffer.position(0).limit(0);
-    this.trailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
+    this.tailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
             .listener(new BinaryTailerListener() {
               @Override
               public void onNewData(byte[] data, int offset, int length) {
@@ -95,20 +96,22 @@ public class DBFTailer extends AbstractDBFCodec {
             }).build();
   }
 
+  @Override
   public void scan() {
-    trailer.scan();
+    tailer.scan();
   }
 
+  @Override
   public void close() {
-    trailer.close();
+    tailer.close();
   }
 
   public void startPeriodicalScan() {
-    trailer.startPeriodicalScan();
+    tailer.startPeriodicalScan();
   }
 
   public void stopPeriodicalScan() {
-    trailer.stopPeriodicalScan();
+    tailer.stopPeriodicalScan();
   }
 
 }

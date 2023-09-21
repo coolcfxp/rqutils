@@ -79,11 +79,11 @@ public class BinaryTailer {
 
     this.file = new File(file);
     if (!this.file.exists())
-      throw new IllegalArgumentException("file does not exist: " + file);
+      throw new IllegalArgumentException("file does not exist: " + this.file.getAbsolutePath());
     if (!this.file.isFile())
-      throw new IllegalArgumentException("file is not a file: " + file);
+      throw new IllegalArgumentException("file is not a file: " + this.file.getAbsolutePath());
     if (!this.file.canRead())
-      throw new IllegalArgumentException("file is not readable: " + file);
+      throw new IllegalArgumentException("file is not readable: " + this.file.getAbsolutePath());
 
     this.bufferSize = bufferSize;
     this.listener = listener;
