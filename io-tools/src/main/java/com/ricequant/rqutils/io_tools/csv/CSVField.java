@@ -46,6 +46,9 @@ public class CSVField {
     }
 
     public String encode(CSVValue value) {
+        if (value.isEmpty())
+            return "";
+
         if (type == FIELD_TYPE_STRING) {
             return value.stringValue();
         }

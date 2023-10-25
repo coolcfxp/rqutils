@@ -17,6 +17,16 @@ public class CSVValue {
 
   private boolean isDouble = false;
 
+  private boolean isEmpty = false;
+
+  public CSVValue()
+  {
+    stringValue = "";
+    doubleValue = 0;
+    longValue = 0;
+    isEmpty = true;
+  }
+
   public CSVValue(String stringValue) {
     this.stringValue = stringValue;
     this.doubleValue = 0;
@@ -37,6 +47,7 @@ public class CSVValue {
     this.longValue = longValue;
     isLong = true;
   }
+
 
   public String stringValue() {
     if (!isString)
@@ -69,6 +80,8 @@ public class CSVValue {
     return isLong;
   }
 
+  public boolean isEmpty() { return isEmpty; }
+
   @Override
   public String toString() {
     if (isString)
@@ -79,6 +92,5 @@ public class CSVValue {
       return String.valueOf(longValue);
     return null;
   }
-
 
 }

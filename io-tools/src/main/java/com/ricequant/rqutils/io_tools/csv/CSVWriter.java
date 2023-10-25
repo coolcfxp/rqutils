@@ -20,8 +20,6 @@ public class CSVWriter {
   BufferedWriter writer;
   protected final List<CSVField> fieldsDef;
 
-  private int numRecords = 0;
-
   private final Calendar c = Calendar.getInstance();
 
   CSVWriter(String fileName, List<CSVField> fields, Charset charset, ThreadFactory schedulerThreadFactory)
