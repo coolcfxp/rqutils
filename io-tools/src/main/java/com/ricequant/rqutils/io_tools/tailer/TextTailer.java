@@ -78,7 +78,7 @@ public class TextTailer implements FileTailer {
                   }
                   if (found) {
                     end += lineSeparator.length();
-                    String line = new String(buffer.array(), start, end - start - 1, charset);
+                    String line = new String(buffer.array(), start, end - start - lineSeparator.length(), charset);
                     rowListener.accept(line);
                     buffer.position(end);
                     start = end;
