@@ -28,7 +28,7 @@ public class CSVTailer implements FileTailer {
           ThreadFactory schedulerThreadFactory, String lineSeparator, String fieldSeparator) {
     this.textTailer = new TextTailer.Builder().charset(charset).lineSeparator(lineSeparator)
             .schedulerThreadFactory(schedulerThreadFactory).build(file, row -> {
-              String[] fields = row.split(fieldSeparator);
+              String[] fields = row.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
               if (header) {
                 fieldNames = fields;
                 header = false;
