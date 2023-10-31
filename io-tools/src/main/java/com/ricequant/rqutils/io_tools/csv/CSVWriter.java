@@ -1,9 +1,6 @@
 package com.ricequant.rqutils.io_tools.csv;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -21,10 +18,12 @@ public class CSVWriter {
   protected final List<CSVField> fieldsDef;
 
   private final Calendar c = Calendar.getInstance();
+  private String lineSeparator = System.lineSeparator();
 
-  CSVWriter(String fileName, List<CSVField> fields, Charset charset, ThreadFactory schedulerThreadFactory)
+  CSVWriter(String fileName, List<CSVField> fields, Charset charset, ThreadFactory schedulerThreadFactory, String lineSeparator)
           throws IOException {
     fieldsDef = fields;
+    this.lineSeparator = lineSeparator;
 
     File file = new File(fileName);
     if (file.exists()) {
@@ -38,6 +37,19 @@ public class CSVWriter {
       else
         throw new IOException("Unable to create file " + fileName);
     }
+
+    RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
+    long length = randomAccessFile.length();
+    int numBytesToRead = 2;
+    byte[] bytes = new byte[2];
+    randomAccessFile.seek(length - numBytesToRead);
+    randomAccessFile.read(bytes);
+    randomAccessFile.close();
+    String lastBytes = new String(bytes);
+    if (!lastBytes.equals(lineSeparator)) {
+      writer.write(lineSeparator);
+      writer.flush();
+    }
   }
 
   public static class Builder {
@@ -47,6 +59,7 @@ public class CSVWriter {
     private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
     private List<CSVField> fields;
+    private String lineSeparator = System.lineSeparator();
 
     public Builder charset(Charset charset) {
       this.charset = charset;
@@ -58,6 +71,10 @@ public class CSVWriter {
       return this;
     }
 
+    public Builder lineSeparator(String lineSeparator) {
+      this.lineSeparator = lineSeparator;
+      return this;
+    }
     public Builder fields(CSVField... fields) {
       this.fields = List.of(fields);
       return this;
@@ -68,13 +85,13 @@ public class CSVWriter {
         throw new IllegalArgumentException("fields must be set");
       }
 
-      return new CSVWriter(file, fields, charset, schedulerThreadFactory);
+      return new CSVWriter(file, fields, charset, schedulerThreadFactory, lineSeparator);
     }
   }
 
   private void writeHeader() throws IOException {
     List<String> fieldNames = fieldsDef.stream().map(CSVField::name).toList();
-    writer.write(String.join(",", fieldNames));
+    writer.write(String.join(",", fieldNames) + lineSeparator);
     writer.flush();
   }
 
@@ -89,7 +106,7 @@ public class CSVWriter {
       formattedList.add(f.encode(v));
     }
 
-    String row = String.join(",", formattedList);
+    String row = String.join(",", formattedList) + lineSeparator;
     writer.write(row);
     writer.flush();
   }
