@@ -71,6 +71,10 @@ public class TextTailer implements FileTailer {
                 while (end < limit) {
                   boolean found = true;
                   for (int i = 0; i < lineSeparator.length(); i++) {
+                    if (end + i >= limit) {
+                      found = false;
+                      break;
+                    }
                     if (buffer.get(end + i) != lineSeparator.charAt(i)) {
                       found = false;
                       break;
