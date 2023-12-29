@@ -121,7 +121,7 @@ public class BinaryTailer {
   }
 
   public void scan() {
-    if (file.lastModified() == lastModified || lastPos == file.length())
+    if (file.lastModified() == lastModified && lastPos == file.length())
       return;
 
     lastModified = file.lastModified();
