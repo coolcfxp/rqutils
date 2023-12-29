@@ -39,4 +39,5 @@ public class DBFRow {
   public Map<String, DBFValue> values() {
     return values;
   }
+
 }

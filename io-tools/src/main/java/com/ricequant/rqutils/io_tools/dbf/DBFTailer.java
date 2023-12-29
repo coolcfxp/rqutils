@@ -91,7 +91,7 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
               @Override
               public void onBeforeRead(RandomAccessFile file) throws Exception {
                 int numRecords = readNumRecords(file);
-                System.out.println(DBFTailer.this.fileName + ": Number of records: " + numRecords);
+      /*          System.out.println(DBFTailer.this.fileName + ": Number of records: " + numRecords);*/
               }
             }).build();
   }
