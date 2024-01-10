@@ -69,7 +69,7 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
                 while (buffer.remaining() >= rowLength) {
                   int rowBegin = buffer.position();
                   byte deletionFlag = buffer.get();
-                  if (deletionFlag == 0x1A) {
+                  if (deletionFlag == 0x2A) {
                     System.out.println(file + ": EOF flag detected: " + deletionFlag);
                   }
                   DBFRow row = new DBFRow(buffer, fieldsDef, charset);

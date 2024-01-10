@@ -24,13 +24,15 @@ public class Main {
   public static void main(String[] args) {
     System.out.println("Hello world!");
     String command = args[0];
+
     if (command.equals("scan_dbf")) {
       AtomicLong atomicLong = new AtomicLong();
       String filePath = args[1];
       DBFTailer tailer = new DBFTailer.Builder().charset(Charset.forName("GBK")).build(filePath,
               row -> {
-                System.out.println(toString(row));
-                atomicLong.incrementAndGet();
+                if (row.get("ACCOUNT").stringValue().equals("41900049176")) {
+                  atomicLong.incrementAndGet();
+                }
               });
       tailer.scan();
 
