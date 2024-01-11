@@ -51,7 +51,16 @@ public class DBFWriter extends AbstractDBFCodec {
       buffer.flip();
       decodeFieldDefs();
       numRecords = readNumRecords(this.file);
-      this.file.seek(this.file.length());
+
+      // 迅投的某些dbf文件存在废字符的问题，目前遇到的是多出来2个字符0D和1A，覆盖掉
+      if (this.file.length() == bodyOffset() + 2 || this.file.length() == bodyOffset() + 1) {
+        this.file.seek(bodyOffset());
+      }
+      else {
+        // 对于迅投文件，如果不是新文件，那么已经是处理好的了
+        // 如果不是迅投文件，则假设完全符合dbf文件规范
+        this.file.seek(this.file.length());
+      }
     }
     else {
       if (file.createNewFile()) {
@@ -66,6 +75,17 @@ public class DBFWriter extends AbstractDBFCodec {
 
 
     this.schedulerThreadFactory = schedulerThreadFactory;
+  }
+
+  public void fixIncompatibleDBFFileAndClose() throws IOException {
+    if (this.file.length() == bodyOffset() + 2 || this.file.length() == bodyOffset() + 1) {
+      this.file.setLength(bodyOffset());
+      this.file.close();
+    }
+  }
+
+  private int bodyOffset() {
+    return HEADER_LENGTH + fieldsDef.size() * 32 + 1;
   }
 
   public static class Builder {
@@ -110,7 +130,7 @@ public class DBFWriter extends AbstractDBFCodec {
     buffer.putInt(0);
 
     // write header length
-    buffer.putShort((short) (HEADER_LENGTH + fieldsDef.size() * 32 + 1));
+    buffer.putShort((short) (bodyOffset()));
 
     buffer.putShort((short) this.rowLength);
 
