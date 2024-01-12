@@ -79,6 +79,7 @@ public class DBFWriter extends AbstractDBFCodec {
 
   public void fixIncompatibleDBFFileAndClose() throws IOException {
     if (this.file.length() == bodyOffset() + 2 || this.file.length() == bodyOffset() + 1) {
+
       this.file.setLength(bodyOffset());
       this.file.close();
     }
