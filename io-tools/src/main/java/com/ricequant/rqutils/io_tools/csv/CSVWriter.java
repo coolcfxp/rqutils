@@ -20,24 +20,34 @@ public class CSVWriter {
   private final Calendar c = Calendar.getInstance();
   private String lineSeparator = System.lineSeparator();
 
-  CSVWriter(String fileName, List<CSVField> fields, Charset charset, ThreadFactory schedulerThreadFactory, String lineSeparator)
+  private final FileWriter fileWriter;
+
+  CSVWriter(String fileName, List<CSVField> fields, Charset charset, ThreadFactory schedulerThreadFactory,
+          String lineSeparator,
+          boolean isWriteHeader)
           throws IOException {
     fieldsDef = fields;
     this.lineSeparator = lineSeparator;
 
     File file = new File(fileName);
     if (file.exists()) {
-      this.writer = new BufferedWriter(new FileWriter(file, true));
+      fileWriter =new FileWriter(file, true);
+      this.writer = new BufferedWriter(fileWriter);
+      ensureNewLine(file);
     }
     else {
       if (file.createNewFile()) {
-        this.writer = new BufferedWriter(new FileWriter(file, true));
-        writeHeader();
+        fileWriter =new FileWriter(file, true);
+        this.writer = new BufferedWriter(fileWriter);
+        if (isWriteHeader)
+          writeHeader();
       }
       else
         throw new IOException("Unable to create file " + fileName);
     }
+  }
 
+  private void ensureNewLine(File file) throws IOException {
     RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
     long length = randomAccessFile.length();
     int numBytesToRead = 2;
@@ -52,6 +62,11 @@ public class CSVWriter {
     }
   }
 
+  public void close() throws IOException {
+    fileWriter.close();
+    writer.close();
+  }
+
   public static class Builder {
 
     private Charset charset = StandardCharsets.UTF_8;
@@ -60,9 +75,15 @@ public class CSVWriter {
 
     private List<CSVField> fields;
     private String lineSeparator = System.lineSeparator();
+    private boolean isWriteHeader;
 
     public Builder charset(Charset charset) {
       this.charset = charset;
+      return this;
+    }
+
+    public Builder isWriteHeader(boolean isWriteHeader) {
+      this.isWriteHeader = isWriteHeader;
       return this;
     }
 
@@ -85,7 +106,7 @@ public class CSVWriter {
         throw new IllegalArgumentException("fields must be set");
       }
 
-      return new CSVWriter(file, fields, charset, schedulerThreadFactory, lineSeparator);
+      return new CSVWriter(file, fields, charset, schedulerThreadFactory, lineSeparator, isWriteHeader);
     }
   }
 

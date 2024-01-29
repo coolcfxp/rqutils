@@ -96,6 +96,23 @@ public class DBFValue {
     return isLong;
   }
 
+  public boolean isEqual(DBFValue v) {
+    if (isBoolean && !v.isBoolean || isDouble && !v.isDouble ||isString && !v.isString ||isLong && !v.isLong)
+      return false;
+
+    if (isBoolean)
+      return booleanValue == v.booleanValue;
+    else if (isDouble)
+      return doubleValue == v.doubleValue;
+    else if (isString)
+      return (stringValue == null && v.stringValue == null) || (
+              stringValue != null && v.stringValue != null && stringValue.equals(v.stringValue));
+    else if (isLong)
+      return longValue == v.longValue;
+    else
+      throw new RuntimeException("DBF value not a valid type");
+  }
+
   @Override
   public String toString() {
     if (isString)
