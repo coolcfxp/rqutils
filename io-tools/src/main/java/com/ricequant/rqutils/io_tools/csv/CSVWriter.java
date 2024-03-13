@@ -75,7 +75,7 @@ public class CSVWriter {
 
     private List<CSVField> fields;
     private String lineSeparator = System.lineSeparator();
-    private boolean isWriteHeader;
+    private boolean isWriteHeader = true;
 
     public Builder charset(Charset charset) {
       this.charset = charset;
