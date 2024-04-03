@@ -25,10 +25,17 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
 
     private Charset charset = StandardCharsets.UTF_8;
 
+    private int reopenInterval = 0;
+
     private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
     public Builder charset(Charset charset) {
       this.charset = charset;
+      return this;
+    }
+
+    public Builder reopenInterval(int reopenInterval) {
+      this.reopenInterval = reopenInterval;
       return this;
     }
 
@@ -38,16 +45,16 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
     }
 
     public DBFTailer build(String file, Consumer<Map<String, DBFValue>> rowListener) {
-      return new DBFTailer(file, rowListener, charset, schedulerThreadFactory);
+      return new DBFTailer(file, rowListener, charset, schedulerThreadFactory, reopenInterval);
     }
   }
 
   private DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset,
-          ThreadFactory schedulerThreadFactory) {
+          ThreadFactory schedulerThreadFactory, int reopenInterval) {
     super(file, charset);
     this.buffer.position(0).limit(0);
-    this.tailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
-            .listener(new BinaryTailerListener() {
+    this.tailer = new BinaryTailer.Builder().reopenInterval(reopenInterval).file(file)
+            .schedulerThreadFactory(schedulerThreadFactory).listener(new BinaryTailerListener() {
               @Override
               public void onNewData(byte[] data, int offset, int length) {
                 buffer.compact();
@@ -91,7 +98,7 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
               @Override
               public void onBeforeRead(RandomAccessFile file) throws Exception {
                 int numRecords = readNumRecords(file);
-      /*          System.out.println(DBFTailer.this.fileName + ": Number of records: " + numRecords);*/
+                /*          System.out.println(DBFTailer.this.fileName + ": Number of records: " + numRecords);*/
               }
             }).build();
   }

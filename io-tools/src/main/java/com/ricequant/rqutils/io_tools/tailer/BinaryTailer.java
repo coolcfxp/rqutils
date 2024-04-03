@@ -11,11 +11,15 @@ public class BinaryTailer {
 
   private final static int DEFAULT_INTERVAL = 100;
 
+  private long lastOpen;
+
   private ScheduledFuture<?> task;
 
   private long lastModified;
 
   private byte[] readBuffer;
+
+  private long reopenInterval = 0;
 
   public static class Builder {
 
@@ -27,6 +31,10 @@ public class BinaryTailer {
 
     private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
+    private int reopenInterval = 0;
+
+    private int rescanInterval = DEFAULT_INTERVAL;
+
     public Builder file(String file) {
       this.file = file;
       return this;
@@ -34,6 +42,16 @@ public class BinaryTailer {
 
     public Builder bufferSize(int bufferSize) {
       this.bufferSize = bufferSize;
+      return this;
+    }
+
+    public Builder reopenInterval(int interval) {
+      this.reopenInterval = interval;
+      return this;
+    }
+
+    public Builder rescanInterval(int interval) {
+      this.rescanInterval = interval;
       return this;
     }
 
@@ -48,7 +66,7 @@ public class BinaryTailer {
     }
 
     public BinaryTailer build() {
-      return new BinaryTailer(file, bufferSize, listener, DEFAULT_INTERVAL, schedulerThreadFactory);
+      return new BinaryTailer(file, bufferSize, listener, rescanInterval, reopenInterval, schedulerThreadFactory);
     }
   }
 
@@ -62,13 +80,13 @@ public class BinaryTailer {
 
   private long lastPos;
 
-  private final RandomAccessFile raFile;
+  private RandomAccessFile raFile;
 
   private final ScheduledExecutorService scheduler;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
 
-  private BinaryTailer(String file, int bufferSize, BinaryTailerListener listener, int interval,
+  private BinaryTailer(String file, int bufferSize, BinaryTailerListener listener, int interval, int reopenInterval,
           ThreadFactory schedulerThreadFactory) {
     if (file == null)
       throw new IllegalArgumentException("file is null");
@@ -88,10 +106,12 @@ public class BinaryTailer {
     this.bufferSize = bufferSize;
     this.listener = listener;
     this.interval = interval;
+    this.reopenInterval = reopenInterval;
     this.lastPos = 0;
 
     try {
       this.raFile = new RandomAccessFile(file, "r");
+      this.lastOpen = System.currentTimeMillis();
     }
     catch (FileNotFoundException e) {
       throw new RuntimeException(e);
@@ -121,6 +141,21 @@ public class BinaryTailer {
   }
 
   public void scan() {
+    long now = System.currentTimeMillis();
+    if (reopenInterval > 0 && now - this.lastOpen >= this.reopenInterval) {
+      try {
+        this.raFile.close();
+        Thread.sleep(1);
+        this.raFile = new RandomAccessFile(file, "r");
+        this.raFile.seek(lastPos);
+        this.lastOpen = now;
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
+
     if (file.lastModified() == lastModified && lastPos == file.length())
       return;
 
