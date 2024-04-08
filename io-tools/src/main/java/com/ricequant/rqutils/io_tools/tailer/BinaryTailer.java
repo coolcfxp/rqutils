@@ -1,7 +1,5 @@
 package com.ricequant.rqutils.io_tools.tailer;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
