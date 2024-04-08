@@ -1,5 +1,7 @@
 package com.ricequant.rqutils.io_tools.tailer;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,6 +17,8 @@ public class BinaryTailer {
 
   private final MessageDigest md;
 
+  private final File comparisonFailedFileContentBackup;
+
   private long lastOpen;
 
   private ScheduledFuture<?> task;
@@ -24,6 +28,8 @@ public class BinaryTailer {
   private byte[] readBuffer;
 
   private long reopenInterval = 0;
+
+  private int writeCount;
 
   public static class Builder {
 
@@ -38,6 +44,10 @@ public class BinaryTailer {
     private int reopenInterval = 0;
 
     private int rescanInterval = DEFAULT_INTERVAL;
+
+    private boolean compareFileContentWhenReopen = false;
+
+    private File comparisonFailedFileContentBackup = null;
 
     public Builder file(String file) {
       this.file = file;
@@ -69,8 +79,19 @@ public class BinaryTailer {
       return this;
     }
 
+    public Builder schedulerThreadFactory(boolean compareFileContentWhenReopen) {
+      this.compareFileContentWhenReopen = compareFileContentWhenReopen;
+      return this;
+    }
+
+    public Builder schedulerThreadFactory(File comparisonFailedFileContentBackup) {
+      this.comparisonFailedFileContentBackup = comparisonFailedFileContentBackup;
+      return this;
+    }
+
     public BinaryTailer build() {
-      return new BinaryTailer(file, bufferSize, listener, rescanInterval, reopenInterval, schedulerThreadFactory);
+      return new BinaryTailer(file, bufferSize, listener, rescanInterval, reopenInterval, compareFileContentWhenReopen,
+              comparisonFailedFileContentBackup, schedulerThreadFactory);
     }
   }
 
@@ -91,6 +112,7 @@ public class BinaryTailer {
   private final AtomicBoolean running = new AtomicBoolean(false);
 
   private BinaryTailer(String file, int bufferSize, BinaryTailerListener listener, int interval, int reopenInterval,
+          boolean compareFileContentWhenReopen, File comparisonFailedFileContentBackup,
           ThreadFactory schedulerThreadFactory) {
     if (file == null)
       throw new IllegalArgumentException("file is null");
@@ -107,15 +129,19 @@ public class BinaryTailer {
     if (!this.file.canRead())
       throw new IllegalArgumentException("file is not readable: " + this.file.getAbsolutePath());
 
-    MessageDigest localMD;
-    try {
-      localMD = MessageDigest.getInstance("MD5");
-    }
-    catch (NoSuchAlgorithmException e) {
-      localMD = null;
+    MessageDigest localMD = null;
+    if (compareFileContentWhenReopen) {
+      try {
+        localMD = MessageDigest.getInstance("MD5");
+      }
+      catch (NoSuchAlgorithmException e) {
+        System.err.println("Unable to find Hash algorithm MD5");
+        e.printStackTrace();
+      }
     }
 
     this.md = localMD;
+    this.comparisonFailedFileContentBackup = comparisonFailedFileContentBackup;
     this.bufferSize = bufferSize;
     this.listener = listener;
     this.interval = interval;
@@ -157,29 +183,48 @@ public class BinaryTailer {
     long now = System.currentTimeMillis();
     if (reopenInterval > 0 && now - this.lastOpen >= this.reopenInterval) {
       try {
-        this.raFile.seek(0);
-        byte[] buffer = new byte[(int) this.raFile.length()];
-        this.raFile.read(buffer, 0, (int) lastPos + 1);
-        this.raFile.seek(lastPos);
+        byte[] lastHash = null;
+        byte[] buffer = null;
+        if (this.md != null) {
+          this.raFile.seek(0);
+          buffer = new byte[(int) lastPos + 1];
+          this.raFile.read(buffer, 0, (int) lastPos + 1);
+          this.raFile.seek(lastPos);
+          lastHash = this.md.digest(buffer);
+        }
 
-        byte[] lastHash = this.md.digest(buffer);
         this.raFile.close();
         Thread.sleep(1);
         this.raFile = new RandomAccessFile(file, "r");
         this.raFile.seek(0);
-        this.raFile.read(buffer, 0, (int) Math.min(this.raFile.length(), lastPos + 1));
-        byte[] currentHash = this.md.digest(buffer);
 
-        boolean isSameHash = true;
-        for (int i = 0; i < lastHash.length; i++) {
-          if (currentHash[i] != lastHash[i]) {
-            isSameHash = false;
-            break;
+        if (this.md != null) {
+          // reuse buffer to save space if it is not necessary to output file content
+          byte[] buffer2 = this.comparisonFailedFileContentBackup == null ? buffer : new byte[(int) lastPos + 1];
+
+          this.raFile.read(buffer2, 0, (int) Math.min(this.raFile.length(), lastPos + 1));
+          byte[] currentHash = this.md.digest(buffer2);
+
+          boolean isSameHash = true;
+          for (int i = 0; i < lastHash.length; i++) {
+            if (currentHash[i] != lastHash[i]) {
+              isSameHash = false;
+              break;
+            }
           }
-        }
 
-        if (!isSameHash) {
-          System.err.println("File last open has different content in the first " + (lastPos + 1) + " bytes.");
+          if (!isSameHash) {
+            System.err.println("File last open has different content in the first " + (lastPos + 1) + " bytes.");
+            if (this.comparisonFailedFileContentBackup != null && this.writeCount < 3) {
+              File originalFile = new File(this.comparisonFailedFileContentBackup, now + "_original");
+              if (originalFile.createNewFile())
+                FileUtils.writeByteArrayToFile(originalFile, buffer);
+              File reopenedFile = new File(this.comparisonFailedFileContentBackup, now + "_reopened");
+              if (originalFile.createNewFile())
+                FileUtils.writeByteArrayToFile(reopenedFile, buffer2);
+              this.writeCount++;
+            }
+          }
         }
 
         this.raFile.seek(lastPos);
