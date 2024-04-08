@@ -1,6 +1,10 @@
 package com.ricequant.rqutils.io_tools.tailer;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -10,6 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BinaryTailer {
 
   private final static int DEFAULT_INTERVAL = 100;
+
+  private final MessageDigest md;
 
   private long lastOpen;
 
@@ -103,6 +109,15 @@ public class BinaryTailer {
     if (!this.file.canRead())
       throw new IllegalArgumentException("file is not readable: " + this.file.getAbsolutePath());
 
+    MessageDigest localMD;
+    try {
+      localMD = MessageDigest.getInstance("MD5");
+    }
+    catch (NoSuchAlgorithmException e) {
+      localMD = null;
+    }
+
+    this.md = localMD;
     this.bufferSize = bufferSize;
     this.listener = listener;
     this.interval = interval;
@@ -144,9 +159,31 @@ public class BinaryTailer {
     long now = System.currentTimeMillis();
     if (reopenInterval > 0 && now - this.lastOpen >= this.reopenInterval) {
       try {
+        this.raFile.seek(0);
+        byte[] buffer = new byte[(int) this.raFile.length()];
+        this.raFile.read(buffer, 0, (int) lastPos + 1);
+        this.raFile.seek(lastPos);
+
+        byte[] lastHash = this.md.digest(buffer);
         this.raFile.close();
         Thread.sleep(1);
         this.raFile = new RandomAccessFile(file, "r");
+        this.raFile.seek(0);
+        this.raFile.read(buffer, 0, (int) Math.min(this.raFile.length(), lastPos + 1));
+        byte[] currentHash = this.md.digest(buffer);
+
+        boolean isSameHash = true;
+        for (int i = 0; i < lastHash.length; i++) {
+          if (currentHash[i] != lastHash[i]) {
+            isSameHash = false;
+            break;
+          }
+        }
+
+        if (!isSameHash) {
+          System.err.println("File last open has different content in the first " + (lastPos + 1) + " bytes.");
+        }
+
         this.raFile.seek(lastPos);
         this.lastOpen = now;
       }
