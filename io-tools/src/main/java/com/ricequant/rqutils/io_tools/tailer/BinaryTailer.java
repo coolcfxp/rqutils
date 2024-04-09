@@ -90,7 +90,8 @@ public class BinaryTailer {
     }
 
     public BinaryTailer build() {
-      return new BinaryTailer(file, bufferSize, listener, rescanInterval, reopenInterval, compareFileContentWhenReopen,
+      return new BinaryTailer(file, bufferSize, listener, rescanInterval, reopenInterval,
+              comparisonFailedFileContentBackup != null || compareFileContentWhenReopen,
               comparisonFailedFileContentBackup, schedulerThreadFactory);
     }
   }
