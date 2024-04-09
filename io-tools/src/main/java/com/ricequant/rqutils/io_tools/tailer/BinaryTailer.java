@@ -79,12 +79,12 @@ public class BinaryTailer {
       return this;
     }
 
-    public Builder schedulerThreadFactory(boolean compareFileContentWhenReopen) {
+    public Builder compareFileContentWhenReopen(boolean compareFileContentWhenReopen) {
       this.compareFileContentWhenReopen = compareFileContentWhenReopen;
       return this;
     }
 
-    public Builder schedulerThreadFactory(File comparisonFailedFileContentBackup) {
+    public Builder comparisonFailedFileContentBackup(File comparisonFailedFileContentBackup) {
       this.comparisonFailedFileContentBackup = comparisonFailedFileContentBackup;
       return this;
     }

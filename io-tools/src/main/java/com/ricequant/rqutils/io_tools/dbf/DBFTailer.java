@@ -4,6 +4,7 @@ import com.ricequant.rqutils.io_tools.FileTailer;
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailer;
 import com.ricequant.rqutils.io_tools.tailer.BinaryTailerListener;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -29,6 +30,10 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
 
     private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
 
+    private boolean compareFileContentWhenReopen;
+
+    private File comparisonFailedFileContentBackup;
+
     public Builder charset(Charset charset) {
       this.charset = charset;
       return this;
@@ -44,16 +49,30 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
       return this;
     }
 
+    public Builder compareFileContentWhenReopen(boolean compareFileContentWhenReopen) {
+      this.compareFileContentWhenReopen = compareFileContentWhenReopen;
+      return this;
+    }
+
+    public Builder comparisonFailedFileContentBackup(File comparisonFailedFileContentBackup) {
+      this.comparisonFailedFileContentBackup = comparisonFailedFileContentBackup;
+      return this;
+    }
+
     public DBFTailer build(String file, Consumer<Map<String, DBFValue>> rowListener) {
-      return new DBFTailer(file, rowListener, charset, schedulerThreadFactory, reopenInterval);
+      return new DBFTailer(file, rowListener, charset, schedulerThreadFactory, reopenInterval,
+              compareFileContentWhenReopen, comparisonFailedFileContentBackup);
     }
   }
 
   private DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset,
-          ThreadFactory schedulerThreadFactory, int reopenInterval) {
+          ThreadFactory schedulerThreadFactory, int reopenInterval, boolean compareFileContentWhenReopen,
+          File comparisonFailedFileContentBackup) {
     super(file, charset);
     this.buffer.position(0).limit(0);
     this.tailer = new BinaryTailer.Builder().reopenInterval(reopenInterval).file(file)
+            .compareFileContentWhenReopen(compareFileContentWhenReopen)
+            .comparisonFailedFileContentBackup(comparisonFailedFileContentBackup)
             .schedulerThreadFactory(schedulerThreadFactory).listener(new BinaryTailerListener() {
               @Override
               public void onNewData(byte[] data, int offset, int length) {
