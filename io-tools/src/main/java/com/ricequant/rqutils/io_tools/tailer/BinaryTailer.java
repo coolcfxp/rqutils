@@ -195,7 +195,7 @@ public class BinaryTailer {
         }
 
         this.raFile.close();
-        Thread.sleep(1);
+        Thread.sleep(1000);
         this.raFile = new RandomAccessFile(file, "r");
         this.raFile.seek(0);
 
