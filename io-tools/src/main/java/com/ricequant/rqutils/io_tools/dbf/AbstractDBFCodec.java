@@ -5,9 +5,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Kangol
@@ -28,7 +26,7 @@ public abstract class AbstractDBFCodec {
 
   protected byte[] padding;
 
-  protected ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024).order(ByteOrder.LITTLE_ENDIAN);;
+  protected ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024).order(ByteOrder.LITTLE_ENDIAN);
 
   AbstractDBFCodec(String fileName, Charset charset) {
     this.fileName = fileName;
@@ -71,5 +69,9 @@ public abstract class AbstractDBFCodec {
     file.read(bytes);
     file.seek(pointer);
     return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
+  }
+
+  public List<DBFField> fields() {
+    return new ArrayList<>(fieldsDef.values());
   }
 }

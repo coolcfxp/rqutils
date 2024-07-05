@@ -29,6 +29,8 @@ public class DBFField {
 
   private final Charset charset;
 
+  private boolean isLong;
+
   DBFField(ByteBuffer fieldDef, int offset, Charset charset) {
     byte[] nameBytes = new byte[11];
     fieldDef.position(offset);
@@ -39,6 +41,10 @@ public class DBFField {
     this.charset = charset;
   }
 
+  public DBFField setNumericToLong() {
+    this.isLong = true;
+    return this;
+  }
 
   public DBFField(String name, byte type, int dataLength, Charset charset) {
     this.name = name;
@@ -60,7 +66,7 @@ public class DBFField {
     }
     else if (type == 'N' || type == 'F') {
       // Number type
-      return new DBFValue(Double.parseDouble(raw));
+      return isLong ? new DBFValue(Long.parseLong(raw)) : new DBFValue(Double.parseDouble(raw));
     }
     else if (type == 'D') {
       // Date type

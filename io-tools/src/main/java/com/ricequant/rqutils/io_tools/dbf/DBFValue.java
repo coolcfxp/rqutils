@@ -8,13 +8,13 @@ import java.util.List;
  */
 public class DBFValue {
 
-  private final String stringValue;
+  private String stringValue;
 
-  private final double doubleValue;
+  private double doubleValue;
 
-  private final boolean booleanValue;
+  private boolean booleanValue;
 
-  private final long longValue;
+  private long longValue;
 
   private boolean isLong = false;
 
@@ -97,7 +97,7 @@ public class DBFValue {
   }
 
   public boolean isEqual(DBFValue v) {
-    if (isBoolean && !v.isBoolean || isDouble && !v.isDouble ||isString && !v.isString ||isLong && !v.isLong)
+    if (isBoolean && !v.isBoolean || isDouble && !v.isDouble || isString && !v.isString || isLong && !v.isLong)
       return false;
 
     if (isBoolean)
@@ -105,12 +105,92 @@ public class DBFValue {
     else if (isDouble)
       return doubleValue == v.doubleValue;
     else if (isString)
-      return (stringValue == null && v.stringValue == null) || (
-              stringValue != null && v.stringValue != null && stringValue.equals(v.stringValue));
+      return (stringValue == null && v.stringValue == null) || (stringValue != null && v.stringValue != null
+              && stringValue.equals(v.stringValue));
     else if (isLong)
       return longValue == v.longValue;
     else
       throw new RuntimeException("DBF value not a valid type");
+  }
+
+  public DBFValue convertToLong() {
+    if (isDouble) {
+      longValue = (long) doubleValue;
+      doubleValue = 0;
+      isDouble = false;
+    }
+    else if (isString) {
+      longValue = Long.parseLong(stringValue);
+      stringValue = null;
+      isString = false;
+    }
+    else if (isBoolean) {
+      longValue = booleanValue ? 1 : 0;
+      booleanValue = false;
+      isBoolean = false;
+    }
+    isLong = true;
+    return this;
+  }
+
+  public DBFValue convertToDouble() {
+    if (isLong) {
+      doubleValue = longValue;
+      longValue = 0;
+      isLong = false;
+    }
+    else if (isString) {
+      doubleValue = Double.parseDouble(stringValue);
+      stringValue = null;
+      isString = false;
+    }
+    else if (isBoolean) {
+      doubleValue = booleanValue ? 1 : 0;
+      booleanValue = false;
+      isBoolean = false;
+    }
+    isDouble = true;
+    return this;
+  }
+
+  public DBFValue convertToBoolean() {
+    if (isLong) {
+      booleanValue = longValue == 1;
+      longValue = 0;
+      isLong = false;
+    }
+    else if (isString) {
+      booleanValue = stringValue != null && (stringValue.equals("true"));
+      stringValue = null;
+      isString = false;
+    }
+    else if (isDouble) {
+      booleanValue = doubleValue == 1;
+      doubleValue = 0;
+      isDouble = false;
+    }
+    isBoolean = true;
+    return this;
+  }
+
+  public DBFValue convertToString() {
+    if (isLong) {
+      stringValue = String.valueOf(longValue);
+      longValue = 0;
+      isLong = false;
+    }
+    else if (isDouble) {
+      stringValue = String.valueOf(doubleValue);
+      doubleValue = 0;
+      isDouble = false;
+    }
+    else if (isBoolean) {
+      stringValue = String.valueOf(booleanValue);
+      booleanValue = false;
+      isBoolean = false;
+    }
+    isString = true;
+    return this;
   }
 
   @Override
