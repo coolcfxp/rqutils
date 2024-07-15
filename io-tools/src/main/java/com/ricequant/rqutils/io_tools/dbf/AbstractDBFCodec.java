@@ -50,6 +50,8 @@ public abstract class AbstractDBFCodec {
       offset += 32;
     }
 
+    this.rowLength += 1;
+
     int headerDefinedRowLength = (buffer.get(11) & 0xFF) << 8 | buffer.get(10) & 0xFF;
     if (headerDefinedRowLength != this.rowLength) {
       System.out.println(
