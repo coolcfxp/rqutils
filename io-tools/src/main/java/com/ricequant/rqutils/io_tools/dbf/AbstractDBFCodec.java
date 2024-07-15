@@ -65,7 +65,7 @@ public abstract class AbstractDBFCodec {
     else
       this.padding = new byte[0];
     offset = offset + 1;
-    if (offset != headerLen)
+    if (offset < headerLen)
       return headerLen;
     return offset;
   }
