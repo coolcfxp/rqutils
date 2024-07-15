@@ -35,6 +35,9 @@ public abstract class AbstractDBFCodec {
 
   protected int decodeFieldDefs() {
     this.fieldsDef.clear();
+
+    short headerLen = buffer.getShort(8);
+
     int offset = HEADER_LENGTH;
     while (true) {
       byte nextByte = buffer.get(offset);
@@ -46,7 +49,7 @@ public abstract class AbstractDBFCodec {
       this.rowLength += field.length();
       offset += 32;
     }
-    this.rowLength++;
+
     int headerDefinedRowLength = (buffer.get(11) & 0xFF) << 8 | buffer.get(10) & 0xFF;
     if (headerDefinedRowLength != this.rowLength) {
       System.out.println(
@@ -59,7 +62,10 @@ public abstract class AbstractDBFCodec {
     }
     else
       this.padding = new byte[0];
-    return offset + 1;
+    offset = offset + 1;
+    if (offset != headerLen)
+      return headerLen;
+    return offset;
   }
 
   protected int readNumRecords(RandomAccessFile file) throws IOException {
