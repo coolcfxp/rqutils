@@ -36,7 +36,7 @@ public class DBFWriter extends AbstractDBFCodec {
 
   DBFWriter(String fileName, List<DBFField> fields, Charset charset, ThreadFactory schedulerThreadFactory)
           throws IOException {
-    super(fileName, charset);
+    super(fileName, charset, null);
 
     for (var field : fields) {
       fieldsDef.put(field.name(), field);

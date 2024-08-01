@@ -34,6 +34,8 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
 
     private File comparisonFailedFileContentBackup;
 
+    private Consumer<Map<String, DBFField>> fieldModifier;
+
     public Builder charset(Charset charset) {
       this.charset = charset;
       return this;
@@ -59,16 +61,22 @@ public class DBFTailer extends AbstractDBFCodec implements FileTailer {
       return this;
     }
 
+    public Builder fieldModifier(Consumer<Map<String, DBFField>> fieldModifier) {
+      this.fieldModifier = fieldModifier;
+      return this;
+    }
+
     public DBFTailer build(String file, Consumer<Map<String, DBFValue>> rowListener) {
       return new DBFTailer(file, rowListener, charset, schedulerThreadFactory, reopenInterval,
-              compareFileContentWhenReopen, comparisonFailedFileContentBackup);
+              compareFileContentWhenReopen, comparisonFailedFileContentBackup, fieldModifier);
     }
+
   }
 
   private DBFTailer(String file, Consumer<Map<String, DBFValue>> rowListener, Charset charset,
           ThreadFactory schedulerThreadFactory, int reopenInterval, boolean compareFileContentWhenReopen,
-          File comparisonFailedFileContentBackup) {
-    super(file, charset);
+          File comparisonFailedFileContentBackup, Consumer<Map<String, DBFField>> fieldModifier) {
+    super(file, charset, fieldModifier);
     this.buffer.position(0).limit(0);
     this.tailer = new BinaryTailer.Builder().reopenInterval(reopenInterval).file(file)
             .compareFileContentWhenReopen(compareFileContentWhenReopen)

@@ -85,6 +85,10 @@ public class DBFField {
   }
 
   public void encode(DBFValue value, byte[] target, int offset) {
+    if (value == null) {
+      Arrays.fill(target, offset, offset + length, (byte) 0x20);
+      return;
+    }
     if (type == FIELD_TYPE_CHAR || type == FIELD_TYPE_MEMO || type == FIELD_TYPE_DATE) {
       byte[] bytes = value.stringValue().getBytes(charset);
       if (bytes.length > target.length - offset)

@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author Kangol
@@ -28,9 +29,12 @@ public abstract class AbstractDBFCodec {
 
   protected ByteBuffer buffer = ByteBuffer.allocate(4096 * 1024).order(ByteOrder.LITTLE_ENDIAN);
 
-  AbstractDBFCodec(String fileName, Charset charset) {
+  private final Consumer<Map<String, DBFField>> fieldModifier;
+
+  AbstractDBFCodec(String fileName, Charset charset, Consumer<Map<String, DBFField>> fieldModifier) {
     this.fileName = fileName;
     this.charset = charset;
+    this.fieldModifier = fieldModifier;
   }
 
   protected int decodeFieldDefs() {
@@ -65,6 +69,11 @@ public abstract class AbstractDBFCodec {
     else
       this.padding = new byte[0];
     offset = offset + 1;
+
+    if (this.fieldModifier != null) {
+      this.fieldModifier.accept(fieldsDef);
+    }
+
     if (offset < headerLen)
       return headerLen;
     return offset;
