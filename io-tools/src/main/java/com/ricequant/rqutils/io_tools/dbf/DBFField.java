@@ -66,6 +66,8 @@ public class DBFField {
     }
     else if (type == 'N' || type == 'F') {
       // Number type
+      if (raw.trim().isEmpty())
+        return new DBFValue(isLong ? 0L : 0.0);
       return isLong ? new DBFValue(Long.parseLong(raw)) : new DBFValue(Double.parseDouble(raw));
     }
     else if (type == 'D') {
