@@ -32,8 +32,20 @@ public class DBFRow {
     return this;
   }
 
-  public DBFValue get(String name) {
-    return values.get(name);
+  public DBFValue get(String... name) {
+    if (name.length == 0)
+      return null;
+
+    if (name.length == 1)
+      return values.get(name[0]);
+
+    for (int i = 0; i < name.length - 1; i++) {
+      DBFValue ret = values.get(name[i]);
+      if (ret != null)
+        return ret;
+    }
+
+    return null;
   }
 
   public Map<String, DBFValue> values() {
