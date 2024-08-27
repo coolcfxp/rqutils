@@ -5,8 +5,6 @@ import com.ricequant.rqutils.io_tools.tailer.TextTailer;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
@@ -22,10 +20,8 @@ public class CSVTailer implements FileTailer {
 
   private String[] fieldNames;
 
-  private final Map<String, String> fieldsMap = new LinkedHashMap<>();
-
-  public CSVTailer(String file, Consumer<Map<String, String>> rowListener, Charset charset,
-          ThreadFactory schedulerThreadFactory, String lineSeparator, String fieldSeparator) {
+  public CSVTailer(String file, Consumer<CSVRow> rowListener, Charset charset, ThreadFactory schedulerThreadFactory,
+          String lineSeparator, String fieldSeparator) {
     this.textTailer = new TextTailer.Builder().charset(charset).lineSeparator(lineSeparator)
             .schedulerThreadFactory(schedulerThreadFactory).build(file, row -> {
               String[] fields = row.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
@@ -34,11 +30,11 @@ public class CSVTailer implements FileTailer {
                 header = false;
               }
               else {
-                fieldsMap.clear();
+                CSVRow csvRow = new CSVRow();
                 for (int i = 0; i < fields.length; i++) {
-                  fieldsMap.put(fieldNames[i], fields[i]);
+                  csvRow.put(fieldNames[i], fields[i]);
                 }
-                rowListener.accept(fieldsMap);
+                rowListener.accept(csvRow);
               }
             });
   }
@@ -83,7 +79,7 @@ public class CSVTailer implements FileTailer {
       return this;
     }
 
-    public CSVTailer build(String file, Consumer<Map<String, String>> rowListener) {
+    public CSVTailer build(String file, Consumer<CSVRow> rowListener) {
       return new CSVTailer(file, rowListener, charset, schedulerThreadFactory, lineSeparator, fieldSeparator);
     }
   }
