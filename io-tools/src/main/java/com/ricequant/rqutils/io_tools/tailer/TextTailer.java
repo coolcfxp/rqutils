@@ -50,6 +50,7 @@ public class TextTailer implements FileTailer {
 
   private TextTailer(String file, Consumer<String> rowListener, Charset charset, ThreadFactory schedulerThreadFactory,
           String lineSeparator) {
+    byte[] separator = lineSeparator.getBytes(charset);
     this.tailer = new BinaryTailer.Builder().file(file).schedulerThreadFactory(schedulerThreadFactory)
             .listener(new BinaryTailerListener() {
               @Override
@@ -70,19 +71,19 @@ public class TextTailer implements FileTailer {
 
                 while (end < limit) {
                   boolean found = true;
-                  for (int i = 0; i < lineSeparator.length(); i++) {
+                  for (int i = 0; i < separator.length; i++) {
                     if (end + i >= limit) {
                       found = false;
                       break;
                     }
-                    if (buffer.get(end + i) != lineSeparator.charAt(i)) {
+                    if (buffer.get(end + i) != separator[i]) {
                       found = false;
                       break;
                     }
                   }
                   if (found) {
-                    end += lineSeparator.length();
-                    String line = new String(buffer.array(), start, end - start - lineSeparator.length(), charset);
+                    end += separator.length;
+                    String line = new String(buffer.array(), start, end - start - separator.length, charset);
                     rowListener.accept(line);
                     buffer.position(end);
                     start = end;
