@@ -165,6 +165,10 @@ public class BinaryTailer {
       scheduler = Executors.newSingleThreadScheduledExecutor();
   }
 
+  public RandomAccessFile file() {
+    return this.raFile;
+  }
+
   public void startPeriodicalScan() {
     if (!running.compareAndSet(false, true))
       return;

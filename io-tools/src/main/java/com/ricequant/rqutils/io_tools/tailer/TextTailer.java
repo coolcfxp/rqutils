@@ -115,4 +115,9 @@ public class TextTailer implements FileTailer {
   public void close() {
     this.tailer.close();
   }
+
+  @Override
+  public RandomAccessFile file() {
+    return this.tailer.file();
+  }
 }
