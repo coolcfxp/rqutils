@@ -139,11 +139,6 @@ public class DBFTailer extends DBFCodec implements FileTailer {
     tailer.close();
   }
 
-  @Override
-  public RandomAccessFile file() {
-    return this.tailer.file();
-  }
-
   public void startPeriodicalScan() {
     tailer.startPeriodicalScan();
   }

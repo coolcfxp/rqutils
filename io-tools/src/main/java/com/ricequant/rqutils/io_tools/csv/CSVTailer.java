@@ -3,7 +3,6 @@ package com.ricequant.rqutils.io_tools.csv;
 import com.ricequant.rqutils.io_tools.FileTailer;
 import com.ricequant.rqutils.io_tools.tailer.TextTailer;
 
-import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
@@ -48,11 +47,6 @@ public class CSVTailer implements FileTailer {
   @Override
   public void close() {
     this.textTailer.close();
-  }
-
-  @Override
-  public RandomAccessFile file() {
-    return this.textTailer.file();
   }
 
   public static class Builder {
