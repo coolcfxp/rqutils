@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 /**
  * @author kangol
  */
-public class DBFTailer extends AbstractDBFCodec implements FileTailer {
+public class DBFTailer extends DBFCodec implements FileTailer {
 
   private final BinaryTailer tailer;
 

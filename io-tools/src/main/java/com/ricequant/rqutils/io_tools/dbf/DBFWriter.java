@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * @author Kangol
  */
-public class DBFWriter extends AbstractDBFCodec {
+public class DBFWriter extends DBFCodec {
 
   private final static int HEADER_LENGTH = 32;
 

@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 /**
  * @author Kangol
  */
-public abstract class AbstractDBFCodec {
+public abstract class DBFCodec {
 
   public final static int HEADER_LENGTH = 32;
 
@@ -31,7 +31,7 @@ public abstract class AbstractDBFCodec {
 
   private final Consumer<Map<String, DBFField>> fieldModifier;
 
-  AbstractDBFCodec(String fileName, Charset charset, Consumer<Map<String, DBFField>> fieldModifier) {
+  DBFCodec(String fileName, Charset charset, Consumer<Map<String, DBFField>> fieldModifier) {
     this.fileName = fileName;
     this.charset = charset;
     this.fieldModifier = fieldModifier;
@@ -79,16 +79,17 @@ public abstract class AbstractDBFCodec {
     return offset;
   }
 
-  protected int readNumRecords(RandomAccessFile file) throws IOException {
+  public List<DBFField> fields() {
+    return new ArrayList<>(fieldsDef.values());
+  }
+
+
+  public static int readNumRecords(RandomAccessFile file) throws IOException {
     long pointer = file.getFilePointer();
     file.seek(NUM_RECORD_OFFSET);
     byte[] bytes = new byte[4];
     file.read(bytes);
     file.seek(pointer);
     return bytes[0] & 0xFF | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
-  }
-
-  public List<DBFField> fields() {
-    return new ArrayList<>(fieldsDef.values());
   }
 }
