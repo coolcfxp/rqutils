@@ -11,7 +11,7 @@ public interface ServiceProcessor {
 
   String name();
 
-  void onConnected(long connectionID, MixedServiceBinarySender sender);
+  void onConnected(long sessionID, MixedServiceBinarySender sender);
 
   void process(long connectionID, ByteBuffer toDecode);
 
