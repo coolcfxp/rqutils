@@ -31,8 +31,12 @@ public class CSVRow {
     return null;
   }
 
-  public boolean containsKey(String name) {
-    return values.containsKey(name);
+  public boolean containsKey(String... names) {
+    for (String name : names) {
+      if (values.containsKey(name))
+        return true;
+    }
+    return false;
   }
 
   public Map<String, String> values() {
