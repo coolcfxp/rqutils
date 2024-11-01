@@ -40,13 +40,15 @@ public class CSVTailer implements FileTailer {
   }
 
   @Override
-  public void scan() {
+  public CSVTailer scan() {
     this.textTailer.scan();
+    return this;
   }
 
   @Override
-  public void close() {
+  public CSVTailer close() {
     this.textTailer.close();
+    return this;
   }
 
   public static class Builder {

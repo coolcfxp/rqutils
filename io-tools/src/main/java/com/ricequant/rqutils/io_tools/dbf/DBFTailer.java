@@ -130,13 +130,15 @@ public class DBFTailer extends DBFCodec implements FileTailer {
   }
 
   @Override
-  public void scan() {
+  public DBFTailer scan() {
     tailer.scan();
+    return this;
   }
 
   @Override
-  public void close() {
+  public DBFTailer close() {
     tailer.close();
+    return this;
   }
 
   public void startPeriodicalScan() {

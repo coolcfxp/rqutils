@@ -5,7 +5,7 @@ package com.ricequant.rqutils.io_tools;
  */
 public interface FileTailer {
 
-  void scan();
+  FileTailer scan();
 
-  void close();
+  FileTailer close();
 }

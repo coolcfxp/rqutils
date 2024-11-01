@@ -107,13 +107,15 @@ public class TextTailer implements FileTailer {
   }
 
   @Override
-  public void scan() {
+  public TextTailer scan() {
     this.tailer.scan();
+    return this;
   }
 
   @Override
-  public void close() {
+  public TextTailer close() {
     this.tailer.close();
+    return this;
   }
 
 }
