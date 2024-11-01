@@ -96,5 +96,6 @@
 	<modules>
 		<module>patterns</module>
 		<module>io-tools</module>
+		<module>network</module>
 	</modules>
 </project>
