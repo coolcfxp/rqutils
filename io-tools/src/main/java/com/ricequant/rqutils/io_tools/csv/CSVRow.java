@@ -22,7 +22,7 @@ public class CSVRow {
     if (name.length == 1)
       return values.get(name[0]);
 
-    for (int i = 0; i < name.length - 1; i++) {
+    for (int i = 0; i < name.length; i++) {
       String ret = values.get(name[i]);
       if (ret != null)
         return ret;
