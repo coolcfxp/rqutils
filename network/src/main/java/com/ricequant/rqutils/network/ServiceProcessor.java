@@ -13,7 +13,7 @@ public interface ServiceProcessor {
 
   void onConnected(long sessionID, MixedServiceBinarySender sender);
 
-  void process(long connectionID, ByteBuffer toDecode);
+  void process(long sessionID, ByteBuffer toDecode);
 
   void onDisconnected(long sessionID);
 }
