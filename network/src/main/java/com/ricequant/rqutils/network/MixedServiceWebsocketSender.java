@@ -31,4 +31,9 @@ public class MixedServiceWebsocketSender implements MixedServiceBinarySender {
     vertxBuffer.get().appendInt(serviceID).setBuffer(16, buffer);
     return socket.writeBinaryMessage(vertxBuffer.get());
   }
+
+  @Override
+  public boolean connected() {
+    return !this.socket.isClosed();
+  }
 }

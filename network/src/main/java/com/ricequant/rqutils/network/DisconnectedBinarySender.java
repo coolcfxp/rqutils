@@ -12,4 +12,9 @@ public class DisconnectedBinarySender implements MixedServiceBinarySender {
   public Future<Void> send(Buffer buffer) {
     return Future.failedFuture("Disconnected");
   }
+
+  @Override
+  public boolean connected() {
+    return false;
+  }
 }

@@ -9,4 +9,6 @@ import io.vertx.core.buffer.Buffer;
 public interface MixedServiceBinarySender {
 
   Future<Void> send(Buffer buffer);
+
+  boolean connected();
 }
