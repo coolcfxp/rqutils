@@ -1,5 +1,6 @@
 package com.ricequant.rqutils.io_tools.csv;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -39,12 +40,17 @@ public class CSVRow {
     return false;
   }
 
-  public Map<String, String> values() {
-    return values;
+  // order is preserved by LinkedHashMap
+  public Collection<String> values() {
+    return values.values();
   }
 
   @Override
   public String toString() {
     return values.toString();
+  }
+
+  public String[] valuesArray() {
+    return values().toArray(new String[0]);
   }
 }

@@ -3,6 +3,7 @@ package com.ricequant.rqutils.io_tools.csv;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.nio.charset.Charset;
 import java.util.function.Consumer;
 
 /**
@@ -10,18 +11,24 @@ import java.util.function.Consumer;
  */
 public class CSVReader {
 
-  public final static String COMMA_DELIMITER = ",";
-
-  public static void parse(File csv, boolean skipHeader, String separator, Consumer<String[]> fieldsProcessor) {
-    try (BufferedReader br = new BufferedReader(new FileReader(csv))) {
+  public static void parse(File csv, Charset charset, Consumer<CSVRow> fieldsProcessor) {
+    try (BufferedReader br = new BufferedReader(new FileReader(csv, charset))) {
       String line;
-      int count = 0;
+      boolean header = true;
+      String[] fieldNames = new String[0];
       while ((line = br.readLine()) != null) {
-        if (count++ == 0 && skipHeader)
-          continue;
-
-        String[] values = line.split(separator);
-        fieldsProcessor.accept(values);
+        String[] fields = line.split("[,|](?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+        if (header) {
+          fieldNames = fields;
+          header = false;
+        }
+        else {
+          CSVRow csvRow = new CSVRow();
+          for (int i = 0; i < fields.length; i++) {
+            csvRow.put(fieldNames[i], fields[i]);
+          }
+          fieldsProcessor.accept(csvRow);
+        }
       }
     }
     catch (Exception e) {
