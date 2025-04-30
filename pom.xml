@@ -11,7 +11,7 @@
 
 	<properties>
 		<jdk.version>21</jdk.version>
-		<lombok.version>1.18.30</lombok.version>
+		<lombok.version>1.18.38</lombok.version>
 	</properties>
 
 	<build>
