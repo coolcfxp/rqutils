@@ -10,8 +10,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * @author Kangol
@@ -32,10 +30,7 @@ public class DBFWriter extends DBFCodec {
 
   private final static int INCOMPLETE_TRANS_FLAG_OFFSET = 14;
 
-  private final ThreadFactory schedulerThreadFactory;
-
-  DBFWriter(String fileName, List<DBFField> fields, Charset charset, ThreadFactory schedulerThreadFactory)
-          throws IOException {
+  DBFWriter(String fileName, List<DBFField> fields, Charset charset) throws IOException {
     super(fileName, charset, null);
 
     for (var field : fields) {
@@ -73,16 +68,6 @@ public class DBFWriter extends DBFCodec {
         throw new IOException("Unable to create file " + fileName);
     }
 
-
-    this.schedulerThreadFactory = schedulerThreadFactory;
-  }
-
-  public void fixIncompatibleDBFFileAndClose() throws IOException {
-    if (this.file.length() == bodyOffset() + 2 || this.file.length() == bodyOffset() + 1) {
-
-      this.file.setLength(bodyOffset());
-      this.file.close();
-    }
   }
 
   private int bodyOffset() {
@@ -93,17 +78,10 @@ public class DBFWriter extends DBFCodec {
 
     private Charset charset = StandardCharsets.UTF_8;
 
-    private ThreadFactory schedulerThreadFactory = Executors.defaultThreadFactory();
-
     private List<DBFField> fields;
 
     public Builder charset(Charset charset) {
       this.charset = charset;
-      return this;
-    }
-
-    public Builder schedulerThreadFactory(ThreadFactory schedulerThreadFactory) {
-      this.schedulerThreadFactory = schedulerThreadFactory;
       return this;
     }
 
@@ -117,7 +95,7 @@ public class DBFWriter extends DBFCodec {
         throw new IllegalArgumentException("fields must be set");
       }
 
-      return new DBFWriter(file, fields, charset, schedulerThreadFactory);
+      return new DBFWriter(file, fields, charset);
     }
   }
 
@@ -201,6 +179,10 @@ public class DBFWriter extends DBFCodec {
     buffer.put((byte) 0x0D);
     this.channel.write(buffer.flip());
     this.channel.force(true);
+  }
+
+  public void writeRow(List<DBFValue> values) throws IOException {
+    writeRow(values.toArray(new DBFValue[0]));
   }
 
   public void writeRow(DBFValue... values) throws IOException {
