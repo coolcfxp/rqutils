@@ -1,5 +1,7 @@
 package com.ricequant.rqutils.io_tools.dbf;
 
+import com.ricequant.rqutils.io_tools.TableRowSource;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
@@ -8,7 +10,7 @@ import java.util.Map;
 /**
  * @author kangol
  */
-public class DBFRow {
+public class DBFRow implements TableRowSource {
 
   private final Map<String, DBFValue> values = new LinkedHashMap<>();
 
@@ -32,6 +34,15 @@ public class DBFRow {
     return this;
   }
 
+  @Override
+  public String getString(String... names) {
+    DBFValue value = get(names);
+    if (value == null)
+      return null;
+    return value.convertToString().stringValue();
+  }
+
+  @Override
   public DBFValue get(String... names) {
     if (names.length == 0)
       return null;
@@ -39,13 +50,19 @@ public class DBFRow {
     if (names.length == 1)
       return values.get(names[0]);
 
+    DBFValue emptyStringValueCandidate = null;
     for (String name : names) {
       DBFValue ret = values.get(name);
-      if (ret != null)
+      if (ret != null) {
+        if (ret.isString() && (ret.stringValue() == null || ret.stringValue().trim().isEmpty())) {
+          emptyStringValueCandidate = ret;
+          continue;
+        }
         return ret;
+      }
     }
 
-    return null;
+    return emptyStringValueCandidate;
   }
 
   public boolean containsKey(String... names) {

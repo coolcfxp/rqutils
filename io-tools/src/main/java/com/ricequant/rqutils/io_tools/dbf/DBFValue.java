@@ -1,12 +1,14 @@
 package com.ricequant.rqutils.io_tools.dbf;
 
+import com.ricequant.rqutils.io_tools.TableValue;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author kangol
  */
-public class DBFValue {
+public class DBFValue implements TableValue {
 
   private String stringValue;
 
@@ -155,7 +157,7 @@ public class DBFValue {
 
   public DBFValue convertToBoolean() {
     if (isLong) {
-      booleanValue = longValue == 1;
+      booleanValue = longValue != 0;
       longValue = 0;
       isLong = false;
     }
@@ -165,7 +167,7 @@ public class DBFValue {
       isString = false;
     }
     else if (isDouble) {
-      booleanValue = doubleValue == 1;
+      booleanValue = doubleValue != 0;
       doubleValue = 0;
       isDouble = false;
     }

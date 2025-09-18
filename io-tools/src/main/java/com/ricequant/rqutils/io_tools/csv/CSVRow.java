@@ -1,5 +1,7 @@
 package com.ricequant.rqutils.io_tools.csv;
 
+import com.ricequant.rqutils.io_tools.TableRowSource;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.Map;
 /**
  * @author kangol
  */
-public class CSVRow {
+public class CSVRow implements TableRowSource {
 
   private final Map<String, String> values = new LinkedHashMap<>();
 
@@ -16,7 +18,8 @@ public class CSVRow {
     return this;
   }
 
-  public String get(String... name) {
+  @Override
+  public String getString(String... name) {
     if (name.length == 0)
       return null;
 
@@ -27,6 +30,23 @@ public class CSVRow {
       String ret = values.get(name[i]);
       if (ret != null)
         return ret;
+    }
+
+    return null;
+  }
+
+  @Override
+  public CSVValue get(String... name) {
+    if (name.length == 0)
+      return null;
+
+    if (name.length == 1)
+      return new CSVValue(values.get(name[0]), true);
+
+    for (int i = 0; i < name.length; i++) {
+      String ret = values.get(name[i]);
+      if (ret != null)
+        return new CSVValue(ret, true);
     }
 
     return null;
