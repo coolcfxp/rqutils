@@ -2,7 +2,6 @@ package com.ricequant.rqutils.io_tools.csv;
 
 import com.ricequant.rqutils.io_tools.TableRowSource;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -61,8 +60,8 @@ public class CSVRow implements TableRowSource {
   }
 
   // order is preserved by LinkedHashMap
-  public Collection<String> values() {
-    return values.values();
+  public Map<String, String> values() {
+    return values;
   }
 
   @Override
@@ -71,6 +70,6 @@ public class CSVRow implements TableRowSource {
   }
 
   public String[] valuesArray() {
-    return values().toArray(new String[0]);
+    return values.values().toArray(new String[0]);
   }
 }
